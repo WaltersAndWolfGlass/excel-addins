@@ -5,7 +5,7 @@ export const wrapPageElement = ({ element }) => {
   return (
     <>
       {element}
-      <Script src="/test.js" />
+      <Script src="test.js" />
     </>
   )
 }
