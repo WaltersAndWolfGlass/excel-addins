@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
+  <Id>a400db10-0d1a-4ba2-8f1d-6e9ad2e937f0</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Walters &amp; Wolf</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="W&amp;W Excel Addins"/>
+  <Description DefaultValue="Addins to process standard W&amp;W Excel forms"/>
+  <IconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="http://localhost:8000/"/>
+  <AppDomains>
+    <AppDomain>http://localhost:8000</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl" />
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="WW.Tab1">
+              <Group id="WW.Tab1.Group1">
+                <Label resid="WW.Tab1.Group1.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="WW.VistaExportButton">
+                  <Label resid="WW.VEB.Label"/>
+                  <Supertip>
+                    <Title resid="WW.VEB.SupertipTitle"/>
+                    <Description resid="WW.VEB.SupertipText"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId1</TaskpaneId>
+                    <SourceLocation resid="WW.Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="WW.Tab1.TabLabel" />
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="http://localhost:8000/ww_shell_gold_16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="http://localhost:8000/ww_shell_gold_32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="http://localhost:8000/ww_shell_gold_80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="WW.Taskpane.Url" DefaultValue="http://localhost:8000/"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="http://localhost:8000/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Get started with W&amp;W Excel addins!"/>
+        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W Order Forms"/>
+        <bt:String id="WW.Tab1.Group1.Label" DefaultValue="Exports"/>
+        <bt:String id="WW.VEB.Label" DefaultValue="Vista"/>
+        <bt:String id="WW.VEB.SupertipTitle" DefaultValue="Vista Export"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Your W&amp;W Excel addins loaded successfully. Go to the HOME tab and click the 'Hello world' button to get started."/>
+        <bt:String id="WW.VEB.SupertipText" DefaultValue="Exports order form data for import into Vista"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

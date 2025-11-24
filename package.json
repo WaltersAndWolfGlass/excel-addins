@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-radio-group": "^1.3.8",
@@ -30,19 +31,24 @@
     "gatsby": "^5.14.6",
     "gatsby-plugin-postcss": "^6.15.0",
     "lucide-react": "^0.554.0",
+    "next-themes": "^0.4.6",
     "postcss": "^8.5.6",
     "react": "^18.2.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.66.1",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tedious": "^18.6.1",
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "office-addin-manifest": "^2.1.2",
     "typescript": "^5.3.3"
   }
 }
