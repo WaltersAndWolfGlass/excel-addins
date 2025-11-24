@@ -3,23 +3,23 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
-  <Id>a400db10-0d1a-4ba2-8f1d-6e9ad2e937f0</Id>
+  <Id>ae7abcbd-77a2-4014-9075-42dc544725a7</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Walters &amp; Wolf</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="W&amp;W Excel Addins"/>
-  <Description DefaultValue="Functions for processing Walters &amp; Wolf Excel forms"/>
-  <IconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_80.png"/>
-  <SupportUrl DefaultValue="https://www.waltersandwolf.com/"/>
+  <DisplayName DefaultValue="W&amp;W DEV Excel Addins"/>
+  <Description DefaultValue="DEV ONLY, MUST BE RUNNING SERVER LOCALLY"/>
+  <IconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="http://localhost:8000/index.html"/>
   <AppDomains>
-    <AppDomain>https://waltersandwolfglass.github.io</AppDomain>
+    <AppDomain>http://localhost:8000</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Workbook"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://github.com/WaltersAndWolfGlass/excel-addins"/>
+    <SourceLocation DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/excel-hello-world/taskpane.html"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -70,8 +70,8 @@
         <bt:Image id="Icon.80x80" DefaultValue="http://localhost:8000/ww_shell_gold_80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="WW.Taskpane.Url" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/index.html"/>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://www.waltersandwolf.com"/>
+        <bt:Url id="WW.Taskpane.Url" DefaultValue="http://localhost:8000/index.html"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="http://localhost:8000/index.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with W&amp;W Excel addins!"/>
