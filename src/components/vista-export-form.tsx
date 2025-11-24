@@ -176,7 +176,7 @@ export function VistaExportForm() {
       data.ship_city,
       data.ship_state,
       data.ship_zip,
-      data.ship_instructions].join("\t");
+      data.ship_instructions].join("\r\t");
 
     var i = 1;
     let lines = lineItems.map((x: OrderFormLineItem) => {
@@ -197,7 +197,7 @@ export function VistaExportForm() {
         x.price_per_unit,
         data.tax_type,
         data.tax_code
-      ].join("\t");
+      ].join("\r\t");
     });
 
     return header + "\n" + lines.join("\n");
