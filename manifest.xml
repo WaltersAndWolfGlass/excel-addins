@@ -75,13 +75,13 @@
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with W&amp;W Excel addins!"/>
-        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W DEV Order Forms"/>
+        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W Order Forms"/>
         <bt:String id="WW.Tab1.Group1.Label" DefaultValue="Exports"/>
         <bt:String id="WW.VEB.Label" DefaultValue="Vista"/>
         <bt:String id="WW.VEB.SupertipTitle" DefaultValue="Vista Export"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Your W&amp;W Excel addins loaded successfully. Go to the HOME tab and click the 'Hello world' button to get started."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Your W&amp;W Excel addins loaded successfully."/>
         <bt:String id="WW.VEB.SupertipText" DefaultValue="Exports order form data for import into Vista"/>
       </bt:LongStrings>
     </Resources>
