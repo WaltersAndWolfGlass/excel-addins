@@ -173,6 +173,7 @@ export function VistaExportForm() {
       data.warranty,
       data.ship_location,
       data.ship_attention,
+      data.ship_street_address,
       data.ship_city,
       data.ship_state,
       data.ship_zip,
