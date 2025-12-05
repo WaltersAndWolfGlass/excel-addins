@@ -50,10 +50,6 @@ const reqId = reqString.pipe(
   ).positive({ message: 'Invalid id' }
   ).pipe(
     z.int32({ message: 'Invalid id' })));
-const optionalCountingNumber = optionalString.pipe(z.optional(
-  z.coerce.number<string>({ message: "Invalid number" }
-  ).positive({ message: 'Must be positive' }
-  ).pipe(z.int({ message: 'Must be a counting number' }))));
 const reqCountingNumber = optionalString.pipe(
   z.coerce.number<string>({ message: "Required" }
   ).positive({ message: 'Must be positive' }
@@ -68,7 +64,7 @@ const formSchema = z.object({
   ordered_by: reqString,
   jc_company: reqId,
   job_number: reqId,
-  warranty: optionalCountingNumber,
+  warranty: reqCountingNumber,
   ship_location: reqString,
   ship_attention: optionalString,
   ship_street_address: reqString,
@@ -96,7 +92,7 @@ export function VistaExportForm() {
       ordered_by: '',
       jc_company: '',
       job_number: '',
-      warranty: '',
+      warranty: '10',
       ship_location: '',
       ship_attention: '',
       ship_street_address: '',
@@ -177,7 +173,8 @@ export function VistaExportForm() {
       data.ship_city,
       data.ship_state,
       data.ship_zip,
-      data.ship_instructions].join("\t");
+      data.ship_instructions,
+      ((new Date()).getMonth() + 1).toString()].join("\t");
 
     var i = 1;
     let lines = lineItems.map((x: OrderFormLineItem) => {
@@ -451,7 +448,7 @@ export function VistaExportForm() {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="evf-warranty">
-                      Warranty
+                      Warranty *
                     </FieldLabel>
                     <InputGroup>
                       <InputGroupInput
