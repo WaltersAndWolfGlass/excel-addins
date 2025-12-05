@@ -2,7 +2,7 @@ import * as React from "react"
 import type { HeadFC, PageProps } from "gatsby"
 import { Toaster } from "@/components/ui/sonner"
 import { VistaExportForm } from "@/components/vista-export-form"
-import versionData from "@/version.yaml"
+import versionData from "@content/version.yaml"
 
 const IndexPage: React.FC<PageProps> = () => {
   return (
@@ -11,9 +11,11 @@ const IndexPage: React.FC<PageProps> = () => {
         <VistaExportForm />
       </main>
       <footer>
-        <small className="">
-          v{versionData.version}
-        </small>
+        <div className="text-right">
+          <small className="p-8">
+            v{versionData.version}
+          </small>
+        </div>
       </footer>
       <Toaster />
     </>
