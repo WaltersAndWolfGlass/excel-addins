@@ -13,7 +13,7 @@ const IndexPage: React.FC<PageProps> = () => {
       <footer>
         <div className="text-right">
           <small className="p-8">
-            v{versionData.version}
+            v {versionData.version}
           </small>
         </div>
       </footer>
