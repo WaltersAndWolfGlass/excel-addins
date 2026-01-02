@@ -21,6 +21,7 @@ export class OrderForm {
   ordered_by: string | undefined = undefined;
   job_number: string | undefined = undefined;
   cost_code: string | undefined = undefined;
+  warranty: string | undefined = undefined;
   shipping_name: string | undefined = undefined;
   shipping_street: string | undefined = undefined;
   shipping_city: string | undefined = undefined;
@@ -63,12 +64,18 @@ export class OrderForm {
     try {
       let sheet = context.workbook.worksheets.getActiveWorksheet();
 
+      let { firstRow: _, lastRow } = await this.GetMetalDataRowLimits(
+        context,
+        sheet
+      );
+
       let vendorRange = getRangeAndLoadValues(sheet, "K10");
       let jobNumberRange = getRangeAndLoadValues(sheet, "K12");
       let costCodeRange = getRangeAndLoadValues(sheet, "K13");
       let orderedByRange = getRangeAndLoadValues(sheet, "O10");
       let orderDateRange = getRangeAndLoadValues(sheet, "O12");
       let expectedDateRange = getRangeAndLoadValues(sheet, "O13");
+      let warrantyRange = getRangeAndLoadValues(sheet, `L${lastRow + 10}`);
 
       await context.sync();
 
@@ -78,6 +85,7 @@ export class OrderForm {
       this.ordered_by = getRangeValueAsString(orderedByRange) ?? "";
       this.order_date = getRangeDateValue(orderDateRange);
       this.expected_date = getRangeDateValue(expectedDateRange);
+      this.warranty = getRangeValueAsString(warrantyRange);
 
       return true;
     } catch (error) {
@@ -86,7 +94,7 @@ export class OrderForm {
     }
   }
 
-  async GetLineItems() {
+  async GetLineItems(): Promise<string | OrderFormLineItem[]> {
     try {
       return await Excel.run(async (context: any) => {
         await this.LoadFormType(context);
@@ -120,7 +128,7 @@ export class OrderForm {
 
   private async GetMetalDataRowLimits(
     context: any,
-    sheet: any,
+    sheet: any
   ): Promise<{ firstRow: number; lastRow: number }> {
     let version = await this.GetTemplateVersion(context);
     var firstRow: number;
@@ -143,7 +151,7 @@ export class OrderForm {
       lastRow =
         range.values.findIndex(
           (e: any) =>
-            e.length > 0 && String(e[0])?.toUpperCase().includes("SET-UP"),
+            e.length > 0 && String(e[0])?.toUpperCase().includes("SET-UP")
         ) + 19;
     }
     return { firstRow: firstRow, lastRow: lastRow };
@@ -181,7 +189,7 @@ export class OrderForm {
     let values = await getValues(
       context,
       sheet,
-      `C${limits.firstRow}:N${limits.lastRow}`,
+      `C${limits.firstRow}:N${limits.lastRow}`
     );
 
     return values

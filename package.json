@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-radio-group": "^1.3.8",
@@ -27,9 +28,13 @@
     "@tailwindcss/postcss": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "gatsby": "^5.14.6",
+    "gatsby-plugin-lodash": "^6.15.0",
     "gatsby-plugin-postcss": "^6.15.0",
+    "gatsby-source-sql": "github:edgarrmondragon/gatsby-source-sql",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.554.0",
     "next-themes": "^0.4.6",
     "postcss": "^8.5.6",
@@ -45,7 +50,9 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.21",
     "@types/node": "^20.11.19",
+    "@types/office-js": "^1.0.565",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "office-addin-manifest": "^2.1.2",

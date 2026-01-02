@@ -1,49 +1,30 @@
 import * as React from "react"
 import * as z from 'zod'
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { FormTextBox } from "@/components/form-textbox"
+import { FormSelect } from "@/components/form-select"
+import { ComboBoxItem, FormComboSearchBox } from "@/components/form-combosearchbox"
+import { FormDatePicker } from "@/components/form-datepicker"
 import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
   FieldGroup,
-  FieldLabel,
   FieldLegend,
   FieldSeparator,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { DatePicker } from "@/components/datepicker"
-import {
   ButtonGroup,
-  ButtonGroupSeparator,
-  ButtonGroupText,
 } from "@/components/ui/button-group"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-  InputGroupText,
-  InputGroupTextarea,
-} from "@/components/ui/input-group"
-import { ShipAddressPresets, ShipProperty } from "@/model/ship_address_presets"
+import { ShipAddressPresets, ShipProperty } from "@/data/ship_address_presets"
 import { OrderForm, OrderFormLineItem } from "@/model/order_form"
+import { Company, getCompanies, Division, getDivisions, getVendors, getJobs, getPhaseCodes, getTaxCodes } from "@/services/database"
 
 const optionalString = z.optional(z.string().trim()).transform(e => !e ? undefined : e);
 const reqString = optionalString.pipe(z.string({ message: 'Required' }));
+const reqJobNumber = reqString.pipe(z.string().regex(/^[A-Z0-9][-A-Z0-9]*[A-Z0-9]$/, 'Not a valid job number'));
 const reqDate = z.date({ error: issue => issue.input === undefined ? 'Required' : 'Invalid date' });
 const reqId = reqString.pipe(
   z.coerce.number<string>({ message: "Invalid id" }
@@ -63,9 +44,9 @@ const formSchema = z.object({
   expected_date: reqDate,
   ordered_by: reqString,
   jc_company: reqId,
-  job_number: reqId,
+  job_number: reqJobNumber,
   warranty: reqCountingNumber,
-  ship_location: reqString,
+  ship_location: reqId,
   ship_attention: optionalString,
   ship_street_address: reqString,
   ship_city: reqString,
@@ -73,7 +54,7 @@ const formSchema = z.object({
   ship_zip: reqString,
   ship_instructions: optionalString,
   item_type: reqCountingNumber,
-  cost_code: reqCountingNumber,
+  cost_code: reqJobNumber,
   division: reqCountingNumber,
   pay_type: reqCountingNumber,
   tax_type: reqCountingNumber,
@@ -83,17 +64,18 @@ const formSchema = z.object({
 export function VistaExportForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
+    mode: "onBlur",
     defaultValues: {
       po_number: 'NEW',
       vendor_number: '',
-      po_description: 'Metal Order',
+      po_description: '',
       order_date: undefined,
       expected_date: undefined,
       ordered_by: '',
       jc_company: '',
       job_number: '',
-      warranty: '10',
-      ship_location: '',
+      warranty: '',
+      ship_location: '1',
       ship_attention: '',
       ship_street_address: '',
       ship_city: '',
@@ -105,23 +87,113 @@ export function VistaExportForm() {
       division: '',
       pay_type: '2', // type of payable, ie job, AP, retention
       tax_type: '1', // 1 = sales tax
-      tax_code: '123'
+      tax_code: ''
     }
   });
+  form.trigger();
   const [exportText, setExportText] = React.useState('');
   const [exportFileName, setExportFileName] = React.useState('example.tsv');
   const [exportCount, setExportCount] = React.useState(0);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [companySelected, setCompanySelected] = React.useState(false);
+  const [divisions, setDivisions] = React.useState<Division[]>([]);
+  const [vendors, setVendors] = React.useState<ComboBoxItem[]>([]);
+  const [jobs, setJobs] = React.useState<ComboBoxItem[]>([]);
+  const [jobSelected, setJobSelected] = React.useState(false);
+  const [costCodes, setCostCodes] = React.useState<ComboBoxItem[]>([]);
+  const [taxCodes, setTaxCodes] = React.useState<ComboBoxItem[]>([]);
 
-  const downloadRef = React.useRef(null);
+  const downloadRef = React.useRef<HTMLAnchorElement>(null);
   React.useEffect(() => {
     if (exportCount > 0) {
       downloadRef.current?.click();
     }
   }, [exportText, exportFileName, exportCount]);
 
+  React.useEffect(() => {
+    getCompanies()
+      .then(data => setCompanies(data))
+  }, [])
+
+  React.useEffect(() => {
+    const subscription = form.watch((data, { name }) => {
+      switch (name) {
+        case "jc_company":
+          if (data.jc_company) {
+            form.resetField("division");
+            form.resetField("vendor_number");
+            form.resetField("job_number");
+            form.resetField("cost_code")
+            form.resetField("tax_code")
+            setCompanySelected(true);
+            setJobSelected(false);
+            getDivisions(data.jc_company)
+              .then(data => setDivisions(data));
+            getVendors(data.jc_company ?? "")
+              .then(vs => setVendors(
+                vs.map(v => ({
+                  value: v.id.toString(),
+                  label: v.name,
+                }))
+              ))
+            getJobs(data.jc_company ?? "")
+              .then(js => setJobs(
+                js.map(j => ({
+                  value: j.job_number,
+                  label: `${j.job_number} ${j.name}`
+                }))
+              ))
+            setCostCodes([]);
+            getTaxCodes(data.jc_company ?? "")
+              .then(tcs => setTaxCodes(
+                tcs.map(tc => ({
+                  value: tc.taxcode,
+                  label: `[${tc.taxcode}] ${tc.description}`
+                }))
+              ))
+          } else {
+            form.resetField("division");
+            form.resetField("vendor_number");
+            form.resetField("job_number");
+            form.resetField("cost_code")
+            form.resetField("tax_code")
+            setCompanySelected(false);
+            setJobSelected(false);
+            setDivisions([]);
+            setVendors([]);
+            setJobs([]);
+            setCostCodes([]);
+            setTaxCodes([]);
+          }
+          form.trigger();
+          break;
+        case "job_number":
+          if (data.job_number) {
+            form.resetField("cost_code")
+            setJobSelected(true);
+            getPhaseCodes(data.jc_company ?? "", data.job_number ?? "")
+              .then(pcs => setCostCodes(
+                pcs.map(pc => ({
+                  value: pc.phase,
+                  label: `[${pc.phase}] ${pc.description}`
+                }))
+              ));
+          } else {
+            form.resetField("cost_code")
+            setJobSelected(false);
+            setCostCodes([]);
+          }
+          form.trigger();
+          break;
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch])
+
   function setAddressPreset(preset: Array<ShipProperty>) {
     preset.forEach(setting => {
       form.setValue(setting.name, setting.value);
+      form.trigger(setting.name)
     })
   }
   function onShipShopA() {
@@ -144,12 +216,12 @@ export function VistaExportForm() {
   }
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    toast("Pushed Submit!");
     constructText(data).then(text => {
       setExportText(text);
       setExportFileName(`${data.po_description} (${data.job_number}).tsv`);
       setExportCount(exportCount + 1);
     });
+    toast("Exported! Check your downloads folder.");
   };
 
   async function constructText(data: z.infer<typeof formSchema>) {
@@ -175,6 +247,11 @@ export function VistaExportForm() {
       data.ship_zip,
       data.ship_instructions,
       ((new Date()).getMonth() + 1).toString()].join("\t");
+
+    if (typeof lineItems === "string") {
+      toast(lineItems);
+      return header;
+    }
 
     var i = 1;
     let lines = lineItems.map((x: OrderFormLineItem) => {
@@ -211,7 +288,6 @@ export function VistaExportForm() {
 
       if (orderForm.form_type === "metal") {
         form.setValue("po_description", "Metal Order");
-        form.setValue("vendor_number", "10000");
         form.setValue("job_number", orderForm.job_number ?? '');
         form.setValue("cost_code", orderForm.cost_code ?? '');
         form.setValue("ordered_by", orderForm.ordered_by ?? '');
@@ -225,6 +301,7 @@ export function VistaExportForm() {
         } else {
           form.resetField("expected_date");
         }
+        form.setValue("warranty", orderForm.warranty ?? '');
         toast("Successfully imported sheet data");
         return;
       }
@@ -234,238 +311,84 @@ export function VistaExportForm() {
   return (
     <div className="m-8">
       <Toaster />
-      <h1 className="scroll-m-20 text-center text-2xl font-extrabold tracking-tight text-balance mb-8">
-        Vista Export
+      <h1 className="flex items-center space-x-2 scroll-m-20 tracking-tight text-balance mb-8">
+        <img src="vista256.png" className="inline-block size-6" />
+        <span className="text-2xl font-extrabold ">Vista Export</span>
       </h1>
-      <Button variant="outline" onClick={readSheetHeader}>Import Info</Button>
       <form id="export-vista-form" onSubmit={form.handleSubmit(onSubmit)} className="mb-8">
         <FieldSet>
           <FieldGroup className="sm:grid sm:grid-cols-2">
             <FieldGroup className="min-w-3xs">
               <FieldLegend className="font-bold">Information</FieldLegend>
-              <Controller
-                name="po_description"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-description">
-                      Description *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-description"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
+              <FormSelect
                 name="jc_company"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-company">
-                      Company *
-                    </FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id="evf-company"
-                        aria-invalid={fieldState.invalid}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="201">Test</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Company"
+                required={true}
+                items={companies.map(x => ({ value: x.id.toString(), label: x.name }))}
               />
-              <Controller
+              <FormSelect
                 name="division"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-division">
-                      Division *
-                    </FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id="evf-division"
-                        aria-invalid={fieldState.invalid}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Northern California</SelectItem>
-                        <SelectItem value="2">Southern California</SelectItem>
-                        <SelectItem value="3">Las Vegas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Division"
+                required={true}
+                disabled={!companySelected}
+                items={divisions.map(x => ({ value: x.id.toString(), label: x.name }))}
               />
-              <Controller
-                name="vendor_number"
+              <Button variant="outline" onClick={readSheetHeader} disabled={!companySelected}>Import from Excel</Button>
+              <FormTextBox
+                name="po_description"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-vendor">
-                      Vendor *
-                    </FieldLabel>
-                    <Select
-                      name={field.name}
-                      value={field.value}
-                      onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id="evf-vendor"
-                        aria-invalid={fieldState.invalid}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10000">Western</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
-                name="order_date"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-order-date">
-                      Order Date *
-                    </FieldLabel>
-                    <DatePicker
-                      id='evf-order-date'
-                      date={field.value}
-                      onChange={field.onChange} />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
-                name="expected_date"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-expected-date">
-                      Expected Date *
-                    </FieldLabel>
-                    <DatePicker
-                      id='evf-expected-date'
-                      date={field.value}
-                      onChange={field.onChange} />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
-                name="ordered_by"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ordered-by">
-                      Ordered By *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ordered-by"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
+                label="Description"
+                required={true} />
+              <FormComboSearchBox
                 name="job_number"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-job-number">
-                      Job Number *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-job-number"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Job"
+                items={jobs}
+                required={true}
+                disabled={!companySelected}
               />
-              <Controller
+              <FormComboSearchBox
+                name="vendor_number"
+                control={form.control}
+                label="Vendor"
+                items={vendors}
+                required={true}
+                disabled={!companySelected}
+              />
+              <FormComboSearchBox
                 name="cost_code"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-cost-code">
-                      Cost Code *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-cost-code"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Cost Code"
+                items={costCodes}
+                required={true}
+                disabled={!companySelected || !jobSelected}
               />
-              <Controller
+              <FormDatePicker
+                name="order_date"
+                control={form.control}
+                label="Order Date"
+                required={true}
+              />
+              <FormDatePicker
+                name="expected_date"
+                control={form.control}
+                label="Expected Date"
+                required={true}
+              />
+              <FormTextBox
+                name="ordered_by"
+                control={form.control}
+                label="Ordered By"
+                required={true}
+              />
+              <FormTextBox
                 name="warranty"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-warranty">
-                      Warranty *
-                    </FieldLabel>
-                    <InputGroup>
-                      <InputGroupInput
-                        {...field}
-                        id="evf-warranty"
-                        aria-invalid={fieldState.invalid}
-                        autoComplete="on"
-                      />
-                      <InputGroupAddon align="inline-end">
-                        years
-                      </InputGroupAddon>
-                    </InputGroup>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Warranty"
+                required={true}
+                suffix="years"
               />
             </FieldGroup>
             <FieldSeparator className="min-w-3xs sm:hidden" />
@@ -477,145 +400,46 @@ export function VistaExportForm() {
                 <Button variant="outline" type="button" size="xs" onClick={onShipLaVerne} >La Verne</Button>
                 <Button variant="outline" type="button" size="xs" onClick={onShipLasVegas} >Las Vegas</Button>
               </ButtonGroup>
-              <Controller
+              <FormTextBox
                 name="ship_instructions"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-instructions">
-                      Shipping Instructions
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-instructions"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Shipping Instructions"
               />
-              <Controller
-                name="ship_location"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-location">
-                      Name *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-location"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
+              <FormTextBox
                 name="ship_attention"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-attention">
-                      Attention
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-attention"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Attention"
               />
-              <Controller
+              <FormTextBox
                 name="ship_street_address"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-street-address">
-                      Street Address *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-street-address"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Street Address"
+                required={true}
               />
-              <Controller
+              <FormTextBox
                 name="ship_city"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-city">
-                      City *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-city"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="City"
+                required={true}
               />
-              <Controller
+              <FormTextBox
                 name="ship_state"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-state">
-                      State *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-state"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="State"
+                required={true}
               />
-              <Controller
+              <FormTextBox
                 name="ship_zip"
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="evf-ship-zip">
-                      Zip *
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="evf-ship-zip"
-                      aria-invalid={fieldState.invalid}
-                      autoComplete="on"
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                label="Zip"
+              />
+              <FormComboSearchBox
+                name="tax_code"
+                control={form.control}
+                label="Tax Code"
+                items={taxCodes}
+                required={true}
+                disabled={!companySelected}
               />
             </FieldGroup>
           </FieldGroup>
