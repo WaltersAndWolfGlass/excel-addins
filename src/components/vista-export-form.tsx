@@ -209,9 +209,11 @@ export function VistaExportForm() {
     setAddressPreset(ShipAddressPresets.LasVegas)
   }
 
-  function formatDate(date: Date): string {
+  function formatDate(date: Date, delimeter: string = '/'): string {
     return (date.getMonth() + 1).toString().padStart(2, '0')
+      + delimeter
       + date.getDate().toString().padStart(2, '0')
+      + delimeter
       + date.getFullYear().toString();
   }
 
@@ -228,13 +230,15 @@ export function VistaExportForm() {
     let orderForm = new OrderForm();
     let lineItems = await orderForm.GetLineItems();
 
+    let today = new Date();
+
     let header: string = [
       "POHB",
       data.po_number,
       data.vendor_number,
       data.po_description,
-      formatDate(data.order_date),
-      formatDate(data.expected_date),
+      formatDate(data.order_date, ''),
+      formatDate(data.expected_date, ''),
       data.ordered_by,
       data.jc_company,
       data.job_number,
@@ -246,7 +250,9 @@ export function VistaExportForm() {
       data.ship_state,
       data.ship_zip,
       data.ship_instructions,
-      ((new Date()).getMonth() + 1).toString()].join("\t");
+      formatDate(new Date(today.getFullYear(), today.getMonth())),
+      "reckey"
+    ].join("\t");
 
     if (typeof lineItems === "string") {
       toast(lineItems);
@@ -271,7 +277,8 @@ export function VistaExportForm() {
         x.quantity,
         x.price_per_unit,
         data.tax_type,
-        data.tax_code
+        data.tax_code,
+        "reckey"
       ].join("\t");
     });
 
