@@ -2,7 +2,7 @@ export async function insertText(
   context: any,
   sheet: any,
   address: string,
-  text: string,
+  text: string
 ) {
   try {
     const range = sheet.getRange(address);
@@ -22,7 +22,7 @@ export function getRangeAndLoadValues(sheet: any, address: string): any {
 export async function getValues(
   context: any,
   sheet: any,
-  address: string,
+  address: string
 ): Promise<Array<Array<any>>> {
   try {
     const range = getRangeAndLoadValues(sheet, address);
@@ -37,7 +37,7 @@ export async function getValues(
 export async function getValueAsString(
   context: any,
   sheet: any,
-  address: string,
+  address: string
 ): Promise<string | undefined> {
   try {
     const range = getRangeAndLoadValues(sheet, address);
@@ -49,9 +49,14 @@ export async function getValueAsString(
   }
 }
 
+export function getRangeValues(range: any): any[][] | undefined {
+  let values: any[][] = range.values;
+  return values;
+}
+
 export function getRangeValueAsString(range: any): string | undefined {
-  let values: Array<Array<any>> = range.values;
-  if (values.length > 0 && values[0].length > 0) {
+  let values = getRangeValues(range);
+  if (values && values.length > 0 && values[0].length > 0) {
     return String(values[0][0]);
   } else {
     return undefined;
@@ -68,7 +73,7 @@ export function getRangeDateValue(range: any): Date | undefined {
       return new Date(
         date.getUTCFullYear(),
         date.getUTCMonth(),
-        date.getUTCDate(),
+        date.getUTCDate()
       );
     }
   } else {
@@ -78,7 +83,7 @@ export function getRangeDateValue(range: any): Date | undefined {
 
 export async function getCustomDocProperty(
   context: any,
-  key: string,
+  key: string
 ): Promise<any> {
   try {
     let customDocProperties = context.workbook.properties.custom;

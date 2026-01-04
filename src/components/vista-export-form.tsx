@@ -296,6 +296,7 @@ export function VistaExportForm() {
       if (orderForm.form_type === "metal") {
         form.setValue("po_description", "Metal Order");
         form.setValue("job_number", orderForm.job_number ?? '');
+        // needs to fill in vendor field
         form.setValue("cost_code", orderForm.cost_code ?? '');
         form.setValue("ordered_by", orderForm.ordered_by ?? '');
         if (orderForm.order_date) {
@@ -309,7 +310,44 @@ export function VistaExportForm() {
           form.resetField("expected_date");
         }
         form.setValue("warranty", orderForm.warranty ?? '');
-        toast("Successfully imported sheet data");
+        toast(`Successfully imported sheet data for Metal Order Form (v${orderForm.template_version})`);
+        return;
+      }
+
+      if (orderForm.form_type === "glass") {
+        var desc = "";
+        switch (orderForm.form_subtype) {
+          case "glass":
+            desc = "Glass Order";
+            break;
+          case "aluminum":
+            desc = "Aluminum Panel Order";
+            break;
+          case "composite":
+            desc = "Composite Panel Order";
+            break;
+          case "door":
+            desc = "Door Glass Order";
+            break;
+          default:
+            desc = "Unknown Glass Order";
+            break;
+        }
+
+        form.setValue("po_description", desc);
+        form.setValue("job_number", orderForm.job_number ?? '');
+        // needs to fill in vendor field
+        if (orderForm.order_date) {
+          form.setValue("order_date", orderForm.order_date);
+        } else {
+          form.resetField("order_date");
+        }
+        if (orderForm.expected_date) {
+          form.setValue("expected_date", orderForm.expected_date);
+        } else {
+          form.resetField("expected_date");
+        }
+        toast(`Successfully imported first sheet data for ${desc} Form (v${orderForm.template_version})`);
         return;
       }
     });
