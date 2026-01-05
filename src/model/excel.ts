@@ -85,6 +85,7 @@ export async function getCustomDocProperty(
 ): Promise<any> {
   try {
     let customDocProperties = context.workbook.properties.custom;
+    customDocProperties.add("test", "val");
     customDocProperties.load(["key", "value"]);
     await context.sync();
     customDocProperties.items.forEach((property: any) => {

@@ -106,8 +106,12 @@ export function VistaExportForm() {
   const [taxCodes, setTaxCodes] = React.useState<ComboBoxItem[]>([]);
 
   React.useEffect(() => {
-    Office.onReady()
-      .then(() => setOfficeReady(true));
+    try {
+      Office.onReady()
+        .then(() => setOfficeReady(true));
+    } catch {
+      setOfficeReady(true);
+    }
   });
 
   const downloadRef = React.useRef<HTMLAnchorElement>(null);
