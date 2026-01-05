@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 export async function insertText(
   context: any,
   sheet: any,
@@ -85,7 +87,10 @@ export async function getCustomDocProperty(
     let customDocProperties = context.workbook.properties.custom;
     customDocProperties.load(["key", "value"]);
     await context.sync();
-
+    customDocProperties.items.forEach((property: any) => {
+      console.log(`${property.key}: ${property.value}`);
+      toast(`${property.key}: ${property.value}`);
+    });
     return customDocProperties.items.find((e: any) => e.key === key)?.value;
   } catch (error) {
     return undefined;

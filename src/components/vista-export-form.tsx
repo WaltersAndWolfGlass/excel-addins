@@ -391,7 +391,7 @@ export function VistaExportForm() {
               {officeReady ? (
                 <Button variant="outline" onClick={readSheetHeader} disabled={!companySelected}>Import from Excel</Button>
               ) : (
-                <Skeleton className="w-100 h-8" />
+                <Skeleton className="w-full h-9" />
               )}
               <FormTextBox
                 name="po_description"
@@ -512,7 +512,7 @@ export function VistaExportForm() {
           >Download</a>
         </>
       ) : (
-        <Skeleton className="w-100 h-8" />
+        <Skeleton className="w-full h-9" />
       )}
     </div>
   )
