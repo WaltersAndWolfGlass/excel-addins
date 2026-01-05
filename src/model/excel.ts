@@ -8,9 +8,7 @@ export async function insertText(
     const range = sheet.getRange(address);
     range.values = [[text]];
     await context.sync();
-  } catch (error) {
-    console.log("Error: " + error);
-  }
+  } catch (error) {}
 }
 
 export function getRangeAndLoadValues(sheet: any, address: string): any {
@@ -29,7 +27,6 @@ export async function getValues(
     await context.sync();
     return range.values;
   } catch (error) {
-    console.log("Error: " + error);
     return [];
   }
 }
@@ -44,7 +41,6 @@ export async function getValueAsString(
     await context.sync();
     return getRangeValueAsString(range);
   } catch (error) {
-    console.log("Error: " + error);
     return undefined;
   }
 }
@@ -92,7 +88,6 @@ export async function getCustomDocProperty(
 
     return customDocProperties.items.find((e: any) => e.key === key)?.value;
   } catch (error) {
-    console.log("Error: " + error);
     return undefined;
   }
 }

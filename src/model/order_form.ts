@@ -55,14 +55,11 @@ export class OrderForm {
       firstSheet.load("name");
       await context.sync();
 
-      console.log(`first sheet name = ${firstSheet.name}`);
-
       if (firstSheet.name.toUpperCase() === "COVERSHEET") {
         let sheet = firstSheet.getNext();
         let glass2Range = getRangeAndLoadValues(sheet, "OrderFormType");
         await context.sync();
         let value = getRangeValueAsString(glass2Range);
-        console.log(`glass2Range.value = ${value}`);
         if (value == "GLASS ORDER") {
           this.form_type = "glass";
           this.form_subtype = "glass";
@@ -109,7 +106,6 @@ export class OrderForm {
         return false;
       });
     } catch (error) {
-      console.log("Error: " + error);
       return false;
     }
   }
@@ -143,7 +139,6 @@ export class OrderForm {
 
       return true;
     } catch (error) {
-      console.log("Error: " + error);
       return false;
     }
   }
@@ -166,7 +161,6 @@ export class OrderForm {
         return "unknown form type";
       });
     } catch (error) {
-      console.log("Error: " + error);
       return "error";
     }
   }
@@ -174,15 +168,11 @@ export class OrderForm {
   private async GetTemplateVersion(context: any): Promise<number> {
     if (!this.template_version) {
       try {
-        console.log("getting template version...");
         let value = await getCustomDocProperty(context, "Template Version");
 
-        console.log(`value: ${value}`);
         let num = Number(value);
         this.template_version = isNaN(num) ? 1 : value;
-        console.log(`template version = ${this.template_version}`);
       } catch (error) {
-        console.log("Error: " + error);
         this.template_version = 1;
       }
     }
@@ -309,17 +299,12 @@ export class OrderForm {
       await context.sync();
 
       this.vendor = getRangeValueAsString(vendorRange) ?? "";
-      console.log(`vendor: ${this.vendor}`);
       this.job_number = getRangeValueAsString(jobNumberRange) ?? "";
-      console.log(`job_number: ${this.job_number}`);
       this.order_date = getRangeDateValue(orderDateRange);
-      console.log(`order date: ${this.order_date}`);
       this.expected_date = getRangeDateValue(expectedDateRange);
-      console.log(`expected date: ${this.expected_date}`);
 
       return true;
     } catch (error) {
-      console.log("Error: " + error);
       return false;
     }
   }
