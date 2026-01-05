@@ -8,7 +8,17 @@ export type Company = {
   name: string;
 };
 export async function getCompanies(): Promise<Company[]> {
-  return [{ id: 2, name: "Company 2" }];
+  return [
+    { id: 1, name: "W&W Glass" },
+    { id: 2, name: "W&W Interiors" },
+    { id: 3, name: "W&W Curtain Wall (Seattle)" },
+    { id: 201, name: "Testing 201" },
+    { id: 202, name: "Testing 202" },
+    { id: 203, name: "Testing 203" },
+    { id: 204, name: "Testing 204" },
+    { id: 205, name: "Testing 205" },
+    { id: 206, name: "Testing 206" },
+  ];
 }
 
 export type Division = {
@@ -19,7 +29,47 @@ export async function getDivisions(
   companyId: number | string | undefined
 ): Promise<Division[]> {
   switch (companyId?.toString()) {
+    case "1":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
     case "2":
+      return [{ id: 1, name: "Fremont Interiors" }];
+    case "3":
+      return [{ id: 1, name: "Mulkiteo" }];
+    case "201":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
+    case "202":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
+    case "203":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
+    case "204":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
+    case "205":
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
+    case "206":
       return [
         { id: 1, name: "Northern California" },
         { id: 2, name: "Southern California" },
@@ -42,14 +92,8 @@ export async function getJobs(companyId: number | string): Promise<Job[]> {
   return Jobs.filter((x) => x.company === company);
 }
 
-export async function getPhaseCodes(
-  companyId: number | string,
-  job_number: string
-): Promise<PhaseCode[]> {
-  const company = companyId.toString();
-  return PhaseCodes.filter(
-    (x) => x.company === company && x.job === job_number
-  );
+export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
+  return PhaseCodes.filter((x) => x.job === job_number);
 }
 
 export async function getTaxCodes(

@@ -55,11 +55,14 @@ export class OrderForm {
       firstSheet.load("name");
       await context.sync();
 
+      console.log(`first sheet name = ${firstSheet.name}`);
+
       if (firstSheet.name.toUpperCase() === "COVERSHEET") {
         let sheet = firstSheet.getNext();
         let glass2Range = getRangeAndLoadValues(sheet, "OrderFormType");
         await context.sync();
         let value = getRangeValueAsString(glass2Range);
+        console.log(`glass2Range.value = ${value}`);
         if (value == "GLASS ORDER") {
           this.form_type = "glass";
           this.form_subtype = "glass";
@@ -175,6 +178,7 @@ export class OrderForm {
 
         let num = Number(value);
         this.template_version = isNaN(num) ? 1 : value;
+        console.log(`template version = ${this.template_version}`);
       } catch (error) {
         console.log("Error: " + error);
         this.template_version = 1;
@@ -303,9 +307,13 @@ export class OrderForm {
       await context.sync();
 
       this.vendor = getRangeValueAsString(vendorRange) ?? "";
+      console.log(`vendor: ${this.vendor}`);
       this.job_number = getRangeValueAsString(jobNumberRange) ?? "";
+      console.log(`job_number: ${this.job_number}`);
       this.order_date = getRangeDateValue(orderDateRange);
+      console.log(`order date: ${this.order_date}`);
       this.expected_date = getRangeDateValue(expectedDateRange);
+      console.log(`expected date: ${this.expected_date}`);
 
       return true;
     } catch (error) {

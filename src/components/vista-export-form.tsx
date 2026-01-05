@@ -171,7 +171,7 @@ export function VistaExportForm() {
           if (data.job_number) {
             form.resetField("cost_code")
             setJobSelected(true);
-            getPhaseCodes(data.jc_company ?? "", data.job_number ?? "")
+            getPhaseCodes(data.job_number ?? "")
               .then(pcs => setCostCodes(
                 pcs.map(pc => ({
                   value: pc.phase,
