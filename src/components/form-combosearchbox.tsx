@@ -62,6 +62,7 @@ export function FormComboSearchBox({
             <PopoverTrigger asChild>
               <div>
                 <Button
+                  id={comboboxId}
                   variant="outline"
                   role="combobox"
                   aria-expanded={open}
