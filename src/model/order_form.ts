@@ -8,7 +8,6 @@ import {
   getValueAsString,
 } from "@/model/excel";
 import { Fraction } from "fraction.js";
-import { toast } from "sonner";
 
 export type OrderFormLineItem = {
   description: string;
@@ -170,12 +169,9 @@ export class OrderForm {
     if (!this.template_version) {
       try {
         let value = await getCustomDocProperty(context, "Template Version");
-        toast(JSON.stringify(value));
-
         let num = Number(value);
         this.template_version = isNaN(num) ? 1 : value;
       } catch (error) {
-        toast("error in gettemplateversion");
         this.template_version = 1;
       }
     }

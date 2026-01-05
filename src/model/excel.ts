@@ -1,5 +1,3 @@
-import { toast } from "sonner";
-
 export async function insertText(
   context: any,
   sheet: any,
@@ -84,8 +82,8 @@ export async function getCustomDocProperty(
   key: string
 ): Promise<any> {
   try {
-    let customDocProperties = context.workbook.properties.custom;
-    let property = customDocProperties.getItem(key);
+    let property = context.workbook.properties.custom.getItem(key);
+    property.load("value");
     await context.sync();
     return property.value;
   } catch (error) {
