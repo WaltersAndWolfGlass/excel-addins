@@ -68,7 +68,8 @@ export function FormComboSearchBox({
                   aria-expanded={open}
                   className={cn("w-full",
                     "justify-between",
-                    field.value ? '' : 'text-muted-foreground')}
+                    field.value ? '' : 'text-muted-foreground',
+                    'font-normal')}
                   disabled={disabled}
                   aria-invalid={fieldState.invalid}
                 >
