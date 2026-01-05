@@ -148,17 +148,18 @@ export class OrderForm {
       return await Excel.run(async (context: any) => {
         await this.LoadFormType(context);
 
-        if (this.form_type == "metal") {
-          return await this.GetLineItemsFromMetalOrderForm(context);
-        } else if (this.form_type == "glass") {
-          if (this.template_version >= 2) {
-            return await this.GetLineItemsFromGlassOrderForm2(context);
-          } else {
-            return "glass form version 1 not implemented";
-          }
+        switch (this.form_type) {
+          case "metal":
+            return await this.GetLineItemsFromMetalOrderForm(context);
+          case "glass":
+            if (this.template_version >= 2) {
+              return await this.GetLineItemsFromGlassOrderForm2(context);
+            } else {
+              return "glass form version 1 not implemented";
+            }
+          default:
+            return "unknown form type";
         }
-
-        return "unknown form type";
       });
     } catch (error) {
       return "error";
@@ -310,7 +311,7 @@ export class OrderForm {
 
   private async GetLineItemsFromGlassOrderForm2(context: any) {
     let sheets = context.workbook.worksheets;
-    sheets.load("items/name");
+    sheets.load("items/visibility");
     await context.sync();
 
     var results: OrderFormLineItem[] = [];
@@ -332,6 +333,8 @@ export class OrderForm {
 
     for (var i = 0; i++; i < sheets.items.length) {
       let sheet = sheets.items[i];
+      if (sheet.visibility !== "Visible") continue;
+
       var sheettype: "normal" | "raked" | "patterns" = "normal";
 
       let glassShape = await getValueAsString(context, sheet, "GlassShape");
@@ -355,7 +358,11 @@ export class OrderForm {
       let widthRange = getRangeAndLoadValues(sheet, "WidthData");
       let heightRange = getRangeAndLoadValues(sheet, "HeightData");
 
-      await context.sync();
+      try {
+        await context.sync();
+      } catch {
+        continue;
+      }
 
       let qtyValues = getRangeValues(qtyRange);
       if (qtyValues === undefined) continue;
