@@ -315,14 +315,18 @@ export class OrderForm {
 
     var results: OrderFormLineItem[] = [];
 
-    function getStringValue(array: Array<any> | undefined, index: number) {
-      return array !== undefined && index < array.length
-        ? String(array[index])
+    function getStringValue(array: any[][] | undefined, index: number) {
+      return array !== undefined &&
+        index < array.length &&
+        array[index].length > 0
+        ? String(array[index][0] ?? "")
         : "";
     }
-    function getNumberValue(array: Array<any> | undefined, index: number) {
-      return array !== undefined && index < array.length
-        ? Number(array[index])
+    function getNumberValue(array: any[][] | undefined, index: number) {
+      return array !== undefined &&
+        index < array.length &&
+        array[index].length > 0
+        ? Number(array[index][0] ?? 0)
         : 0;
     }
 
@@ -366,8 +370,8 @@ export class OrderForm {
       let heightValues = getRangeValues(heightRange);
 
       for (var j = 0; j++; j < qtyValues.length) {
-        let qty = Number(qtyValues[j]);
-        if (isNaN(qty) || qty <= 0) continue;
+        let qty = getNumberValue(qtyValues, j);
+        if (qty <= 0) continue;
         let mark = getStringValue(markValues, j);
         let sqft = getNumberValue(sqftValues, j);
         let price = getNumberValue(priceValues, j);
