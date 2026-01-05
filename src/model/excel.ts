@@ -85,14 +85,9 @@ export async function getCustomDocProperty(
 ): Promise<any> {
   try {
     let customDocProperties = context.workbook.properties.custom;
-    customDocProperties.add("test", "val");
-    customDocProperties.load(["key", "value"]);
+    let property = customDocProperties.getItem(key);
     await context.sync();
-    customDocProperties.items.forEach((property: any) => {
-      console.log(`${property.key}: ${property.value}`);
-      toast(`${property.key}: ${property.value}`);
-    });
-    return customDocProperties.items.find((e: any) => e.key === key)?.value;
+    return property.value;
   } catch (error) {
     return undefined;
   }
