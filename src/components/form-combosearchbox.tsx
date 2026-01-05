@@ -76,7 +76,7 @@ export function FormComboSearchBox({
                   {field.value
                     ? items.find(item => item.value === field.value)?.label
                     : `Select ${label}...`}
-                  <ChevronsUpDown className="opacity-50" />
+                  <ChevronsUpDown />
                 </Button>
               </div>
             </PopoverTrigger>
