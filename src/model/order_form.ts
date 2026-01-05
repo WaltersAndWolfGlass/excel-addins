@@ -170,7 +170,7 @@ export class OrderForm {
       try {
         let value = await getCustomDocProperty(context, "Template Version");
         let num = Number(value);
-        this.template_version = isNaN(num) ? 1 : value;
+        this.template_version = isNaN(num) ? 1 : num;
       } catch (error) {
         this.template_version = 1;
       }
