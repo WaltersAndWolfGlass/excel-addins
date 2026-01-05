@@ -32,7 +32,7 @@ export class OrderForm {
   shipping_state: string | undefined = undefined;
   shipping_zip: string | undefined = undefined;
 
-  template_version: number = 1;
+  template_version: number = 0;
 
   private async LoadFormType(context: any) {
     await this.GetTemplateVersion(context);
