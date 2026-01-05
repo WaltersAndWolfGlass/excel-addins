@@ -174,8 +174,10 @@ export class OrderForm {
   private async GetTemplateVersion(context: any): Promise<number> {
     if (!this.template_version) {
       try {
+        console.log("getting template version...");
         let value = await getCustomDocProperty(context, "Template Version");
 
+        console.log(`value: ${value}`);
         let num = Number(value);
         this.template_version = isNaN(num) ? 1 : value;
         console.log(`template version = ${this.template_version}`);
