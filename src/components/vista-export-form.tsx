@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FormTextBox } from "@/components/form-textbox"
 import { FormSelect } from "@/components/form-select"
 import { ComboBoxItem, FormComboSearchBox } from "@/components/form-combosearchbox"
@@ -91,6 +92,7 @@ export function VistaExportForm() {
     }
   });
   form.trigger();
+  const [officeReady, setOfficeReady] = React.useState(false);
   const [exportText, setExportText] = React.useState('');
   const [exportFileName, setExportFileName] = React.useState('example.tsv');
   const [exportCount, setExportCount] = React.useState(0);
@@ -102,6 +104,11 @@ export function VistaExportForm() {
   const [jobSelected, setJobSelected] = React.useState(false);
   const [costCodes, setCostCodes] = React.useState<ComboBoxItem[]>([]);
   const [taxCodes, setTaxCodes] = React.useState<ComboBoxItem[]>([]);
+
+  React.useEffect(() => {
+    Office.onReady()
+      .then(() => setOfficeReady(true));
+  });
 
   const downloadRef = React.useRef<HTMLAnchorElement>(null);
   React.useEffect(() => {
@@ -381,7 +388,11 @@ export function VistaExportForm() {
                 disabled={!companySelected}
                 items={divisions.map(x => ({ value: x.id.toString(), label: x.name }))}
               />
-              <Button variant="outline" onClick={readSheetHeader} disabled={!companySelected}>Import from Excel</Button>
+              {officeReady ? (
+                <Button variant="outline" onClick={readSheetHeader} disabled={!companySelected}>Import from Excel</Button>
+              ) : (
+                <Skeleton className="w-100 h-8" />
+              )}
               <FormTextBox
                 name="po_description"
                 control={form.control}
@@ -491,12 +502,18 @@ export function VistaExportForm() {
           </FieldGroup>
         </FieldSet>
       </form>
-      <Button type="submit" form="export-vista-form">Export</Button>
-      <a ref={downloadRef}
-        href={'data:text/plain;charset=utf-8,' + encodeURIComponent(exportText)}
-        download={exportFileName}
-        className="hidden"
-      >Download</a>
+      {officeReady ? (
+        <>
+          <Button type="submit" form="export-vista-form">Export</Button>
+          <a ref={downloadRef}
+            href={'data:text/plain;charset=utf-8,' + encodeURIComponent(exportText)}
+            download={exportFileName}
+            className="hidden"
+          >Download</a>
+        </>
+      ) : (
+        <Skeleton className="w-100 h-8" />
+      )}
     </div>
   )
 }
