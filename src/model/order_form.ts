@@ -390,17 +390,17 @@ export class OrderForm {
 
         var desc = "";
         if (sheettype === "raked") {
-          desc = `${qty} @ ${new Fraction(base).toFraction()} x ${new Fraction(
-            left
-          ).toFraction()} x ${new Fraction(
+          desc = `${qty} @ ${new Fraction(base).toFraction(
+            true
+          )} x ${new Fraction(left).toFraction(true)} x ${new Fraction(
             right
-          ).toFraction()} ${markStyle} ${mark}`;
+          ).toFraction(true)} ${markStyle} ${mark}`;
         } else if (sheettype === "patterns") {
           desc = `${qty} @ SEE DWG ${markStyle} ${mark}`;
         } else if (sheettype === "normal") {
-          desc = `${qty} @ ${new Fraction(width).toFraction()} x ${new Fraction(
-            height
-          ).toFraction()} ${markStyle} ${mark}`;
+          desc = `${qty} @ ${new Fraction(width).toFraction(
+            true
+          )} x ${new Fraction(height).toFraction(true)} ${markStyle} ${mark}`;
         } else {
           desc = `${qty} @ [unknown] x [unknown] ${markStyle} ${mark}`;
         }
