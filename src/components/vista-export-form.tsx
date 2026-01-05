@@ -299,7 +299,6 @@ export function VistaExportForm() {
   function readSheetHeader() {
     let orderForm = new OrderForm();
     orderForm.LoadHeaderFromWorkbook().then(success => {
-      toast(JSON.stringify(orderForm))
       if (!success) {
         toast("Failed to load data from sheet")
         return;
