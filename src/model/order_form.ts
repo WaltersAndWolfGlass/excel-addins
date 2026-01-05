@@ -331,7 +331,7 @@ export class OrderForm {
         : 0;
     }
 
-    for (var i = 0; i++; i < sheets.items.length) {
+    for (var i = 0; i < sheets.items.length; i++) {
       let sheet = sheets.items[i];
       if (sheet.visibility !== "Visible") continue;
 
@@ -376,7 +376,7 @@ export class OrderForm {
       let widthValues = getRangeValues(widthRange);
       let heightValues = getRangeValues(heightRange);
 
-      for (var j = 0; j++; j < qtyValues.length) {
+      for (var j = 0; j < qtyValues.length; j++) {
         let qty = getNumberValue(qtyValues, j);
         if (qty <= 0) continue;
         let mark = getStringValue(markValues, j);

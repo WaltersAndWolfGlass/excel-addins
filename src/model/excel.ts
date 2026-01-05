@@ -46,7 +46,7 @@ export async function getValueAsString(
 }
 
 export function getRangeValues(range: any): any[][] | undefined {
-  let values: any[][] = range.values;
+  let values: any[][] | undefined = range.values;
   return values;
 }
 
