@@ -241,6 +241,8 @@ export function VistaExportForm() {
     let orderForm = new OrderForm();
     let lineItems = await orderForm.GetLineItems();
 
+    toast(JSON.stringify(lineItems));
+
     let today = new Date();
 
     let header: string = [
