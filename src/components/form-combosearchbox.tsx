@@ -58,7 +58,7 @@ export function FormComboSearchBox({
           <FieldLabel htmlFor={comboboxId}>
             {label}{required ? " *" : ""}
           </FieldLabel>
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open} onOpenChange={x => setOpen(disabled ? false : x)}>
             <PopoverTrigger asChild>
               <div>
                 <Button

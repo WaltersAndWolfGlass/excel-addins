@@ -1,12 +1,14 @@
-import { Vendor, Vendors } from "@/data/vendor_data";
-import { Job, Jobs } from "@/data/job_data";
-import { PhaseCode, PhaseCodes } from "@/data/phasecode_data";
-import { TaxCode, TaxCodes } from "@/data/taxcode_data";
+import { Vendor } from "@/data/vendor";
+import { Job } from "@/data/job";
+import { PhaseCode } from "@/data/phasecode";
+import { TaxCode } from "@/data/taxcode";
+import { ShipLoc } from "@/data/shiploc";
 
 export type Company = {
   id: number;
   name: string;
 };
+
 export async function getCompanies(): Promise<Company[]> {
   return [
     { id: 1, name: "W&W Glass" },
@@ -25,6 +27,7 @@ export type Division = {
   id: number;
   name: string;
 };
+
 export async function getDivisions(
   companyId: number | string | undefined
 ): Promise<Division[]> {
@@ -36,9 +39,17 @@ export async function getDivisions(
         { id: 3, name: "Las Vegas, Nevada" },
       ];
     case "2":
-      return [{ id: 1, name: "Fremont Interiors" }];
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
     case "3":
-      return [{ id: 1, name: "Mulkiteo" }];
+      return [
+        { id: 1, name: "Northern California" },
+        { id: 2, name: "Southern California" },
+        { id: 3, name: "Las Vegas, Nevada" },
+      ];
     case "201":
       return [
         { id: 1, name: "Northern California" },
@@ -80,25 +91,59 @@ export async function getDivisions(
   }
 }
 
+const apiBase = "https://wwweb/portal/desktopModules/ww_Global/API/Nebula";
+
 export async function getVendors(
   companyId: number | string
 ): Promise<Vendor[]> {
-  const company = companyId.toString();
-  return Vendors.filter((x) => x.company === company);
+  let response = await fetch(
+    `${apiBase}/GetVendorsByCompany?companyId=${companyId}`
+  );
+  if (!response.ok) throw new Error("Fetch Vendors failed.");
+  let vendors: Vendor[] = await response.json();
+  return vendors;
 }
 
 export async function getJobs(companyId: number | string): Promise<Job[]> {
-  const company = companyId.toString();
-  return Jobs.filter((x) => x.company === company);
+  let response = await fetch(
+    `${apiBase}/GetJobsByCompany?companyId=${companyId}`
+  );
+  if (!response.ok) throw new Error("Fetch Jobs failed.");
+  let jobs: Job[] = await response.json();
+  for (let job of jobs) {
+    job.JobNumber = job.JobNumber.trim().replace(/-$/, "");
+  }
+  return jobs;
 }
 
 export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
-  return PhaseCodes.filter((x) => x.job === job_number);
+  let response = await fetch(
+    `${apiBase}/GetPhasesByJobNumber?jobNumber=${job_number}`
+  );
+  if (!response.ok) throw new Error("Fetch Phases failed.");
+  let phases: PhaseCode[] = await response.json();
+  for (let phase of phases) {
+    phase.Code = phase.Code.trim().replace(/-$/, "");
+  }
+  return phases;
 }
 
 export async function getTaxCodes(
   companyId: number | string
 ): Promise<TaxCode[]> {
-  const company = companyId.toString();
-  return TaxCodes.filter((x) => x.company === company);
+  let response = await fetch(
+    `${apiBase}/GetTaxCodesByCompany?companyId=${companyId}`
+  );
+  if (!response.ok) throw new Error("Fetch Tax Codes failed.");
+  return await response.json();
+}
+
+export async function getShipLocs(
+  companyId: number | string
+): Promise<ShipLoc[]> {
+  let response = await fetch(
+    `${apiBase}/GetShipLocsByCompany?companyId=${companyId}`
+  );
+  if (!response.ok) throw new Error("Fetch ShipLocs failed.");
+  return await response.json();
 }

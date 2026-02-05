@@ -19,9 +19,13 @@ import {
 import {
   ButtonGroup,
 } from "@/components/ui/button-group"
-import { ShipAddressPresets, ShipProperty } from "@/data/ship_address_presets"
 import { OrderForm, OrderFormLineItem } from "@/model/order_form"
-import { Company, getCompanies, Division, getDivisions, getVendors, getJobs, getPhaseCodes, getTaxCodes } from "@/services/database"
+import { Company, getCompanies, Division, getDivisions, getVendors, getJobs, getPhaseCodes, getTaxCodes, getShipLocs } from "@/services/database"
+import { Job } from "@/data/job"
+import { Vendor } from "@/data/vendor"
+import { PhaseCode } from "@/data/phasecode"
+import { TaxCode } from "@/data/taxcode"
+import { ShipLoc } from "@/data/shiploc"
 
 const optionalString = z.optional(z.string().trim()).transform(e => !e ? undefined : e);
 const reqString = optionalString.pipe(z.string({ message: 'Required' }));
@@ -62,6 +66,8 @@ const formSchema = z.object({
   tax_code: reqString,
 });
 
+const alphaNumCompare = new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare;
+
 export function VistaExportForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -76,7 +82,7 @@ export function VistaExportForm() {
       jc_company: '',
       job_number: '',
       warranty: '',
-      ship_location: '1',
+      ship_location: '',
       ship_attention: '',
       ship_street_address: '',
       ship_city: '',
@@ -99,11 +105,12 @@ export function VistaExportForm() {
   const [companies, setCompanies] = React.useState<Company[]>([]);
   const [companySelected, setCompanySelected] = React.useState(false);
   const [divisions, setDivisions] = React.useState<Division[]>([]);
-  const [vendors, setVendors] = React.useState<ComboBoxItem[]>([]);
-  const [jobs, setJobs] = React.useState<ComboBoxItem[]>([]);
+  const [vendors, setVendors] = React.useState<(ComboBoxItem & Vendor)[]>([]);
+  const [jobs, setJobs] = React.useState<(ComboBoxItem & Job)[]>([]);
   const [jobSelected, setJobSelected] = React.useState(false);
-  const [costCodes, setCostCodes] = React.useState<ComboBoxItem[]>([]);
-  const [taxCodes, setTaxCodes] = React.useState<ComboBoxItem[]>([]);
+  const [costCodes, setCostCodes] = React.useState<(ComboBoxItem & PhaseCode)[]>([]);
+  const [taxCodes, setTaxCodes] = React.useState<(ComboBoxItem & TaxCode)[]>([]);
+  const [shipLocs, setShipLocs] = React.useState<(ComboBoxItem & ShipLoc)[]>([]);
 
   React.useEffect(() => {
     try {
@@ -136,38 +143,49 @@ export function VistaExportForm() {
             form.resetField("job_number");
             form.resetField("cost_code")
             form.resetField("tax_code")
+            form.resetField("ship_location")
+            form.resetField("ship_street_address")
+            form.resetField("ship_city")
+            form.resetField("ship_state")
+            form.resetField("ship_zip")
             setCompanySelected(true);
             setJobSelected(false);
             getDivisions(data.jc_company)
               .then(data => setDivisions(data));
             getVendors(data.jc_company ?? "")
-              .then(vs => setVendors(
-                vs.map(v => ({
-                  value: v.id.toString(),
-                  label: v.name,
-                }))
-              ))
+              .then(vs => {
+                vs.sort((a, b) => alphaNumCompare(a.Name, b.Name));
+                setVendors(vs.map(v => ({ value: v.Id.toString(), label: v.Name, ...v })));
+              })
             getJobs(data.jc_company ?? "")
-              .then(js => setJobs(
-                js.map(j => ({
-                  value: j.job_number,
-                  label: `${j.job_number} ${j.name}`
-                }))
-              ))
+              .then(js => {
+                js.sort((a, b) => alphaNumCompare(a.JobNumber, b.JobNumber));
+                setJobs(js.map(j => ({ value: j.JobNumber, label: `[${j.JobNumber}] ${j.JobName}`, ...j })));
+              })
             setCostCodes([]);
             getTaxCodes(data.jc_company ?? "")
-              .then(tcs => setTaxCodes(
-                tcs.map(tc => ({
-                  value: tc.taxcode,
-                  label: `[${tc.taxcode}] ${tc.description}`
-                }))
-              ))
+              .then(tcs => {
+                tcs.sort((a, b) => alphaNumCompare(a.Code, b.Code))
+                setTaxCodes(tcs.map(tc => ({ value: tc.Code, label: `[${tc.Code}] ${tc.Description}`, ...tc })));
+              });
+            getShipLocs(data.jc_company ?? "")
+              .then(sls => {
+                sls.sort((a, b) => alphaNumCompare(a.Code, b.Code));
+                setShipLocs(
+                  sls.map(sl => ({ value: sl.Code, label: `[${sl.Code}] ${sl.Description}`, ...sl }))
+                );
+              })
           } else {
             form.resetField("division");
             form.resetField("vendor_number");
             form.resetField("job_number");
             form.resetField("cost_code")
             form.resetField("tax_code")
+            form.resetField("ship_location")
+            form.resetField("ship_street_address")
+            form.resetField("ship_city")
+            form.resetField("ship_state")
+            form.resetField("ship_zip")
             setCompanySelected(false);
             setJobSelected(false);
             setDivisions([]);
@@ -175,6 +193,7 @@ export function VistaExportForm() {
             setJobs([]);
             setCostCodes([]);
             setTaxCodes([]);
+            setShipLocs([]);
           }
           form.trigger();
           break;
@@ -183,12 +202,10 @@ export function VistaExportForm() {
             form.resetField("cost_code")
             setJobSelected(true);
             getPhaseCodes(data.job_number ?? "")
-              .then(pcs => setCostCodes(
-                pcs.map(pc => ({
-                  value: pc.phase,
-                  label: `[${pc.phase}] ${pc.description}`
-                }))
-              ));
+              .then(pcs => {
+                pcs.sort((a, b) => alphaNumCompare(a.Code, b.Code));
+                setCostCodes(pcs.map(pc => ({ value: pc.Code, label: `[${pc.Code}] ${pc.Description}`, ...pc })))
+              });
           } else {
             form.resetField("cost_code")
             setJobSelected(false);
@@ -196,29 +213,28 @@ export function VistaExportForm() {
           }
           form.trigger();
           break;
+        case "ship_location":
+          if (data.ship_location) {
+            let filteredShipLocs = shipLocs.filter(x => x.Code == data.ship_location);
+            let sl = filteredShipLocs[0];
+            if (sl.Address) {
+              form.setValue("ship_street_address", sl.Address);
+            } else { form.resetField("ship_street_address"); }
+            if (sl.City) {
+              form.setValue("ship_city", sl.City);
+            } else { form.resetField("ship_city"); }
+            if (sl.State) {
+              form.setValue("ship_state", sl.State);
+            } else { form.resetField("ship_state"); }
+            if (sl.Zip) {
+              form.setValue("ship_zip", sl.Zip);
+            } else { form.resetField("ship_zip"); }
+            form.trigger();
+          }
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch])
-
-  function setAddressPreset(preset: Array<ShipProperty>) {
-    preset.forEach(setting => {
-      form.setValue(setting.name, setting.value);
-      form.trigger(setting.name)
-    })
-  }
-  function onShipShopA() {
-    setAddressPreset(ShipAddressPresets.ShopA)
-  }
-  function onShipShopB() {
-    setAddressPreset(ShipAddressPresets.ShopB)
-  }
-  function onShipLaVerne() {
-    setAddressPreset(ShipAddressPresets.LaVerne)
-  }
-  function onShipLasVegas() {
-    setAddressPreset(ShipAddressPresets.LasVegas)
-  }
+  }, [form.watch, shipLocs])
 
   function formatDate(date: Date, delimeter: string = '/'): string {
     return (date.getMonth() + 1).toString().padStart(2, '0')
@@ -456,12 +472,14 @@ export function VistaExportForm() {
             <FieldSeparator className="min-w-3xs sm:hidden" />
             <FieldGroup className="min-w-3xs">
               <FieldLegend className="font-bold">Shipping</FieldLegend>
-              <ButtonGroup>
-                <Button variant="outline" type="button" size="xs" onClick={onShipShopA} >Shop A</Button>
-                <Button variant="outline" type="button" size="xs" onClick={onShipShopB} >Shop B</Button>
-                <Button variant="outline" type="button" size="xs" onClick={onShipLaVerne} >La Verne</Button>
-                <Button variant="outline" type="button" size="xs" onClick={onShipLasVegas} >Las Vegas</Button>
-              </ButtonGroup>
+              <FormComboSearchBox
+                name="ship_location"
+                control={form.control}
+                label="Shipping Location"
+                items={shipLocs}
+                required={true}
+                disabled={!companySelected}
+              />
               <FormTextBox
                 name="ship_instructions"
                 control={form.control}
@@ -494,6 +512,7 @@ export function VistaExportForm() {
                 name="ship_zip"
                 control={form.control}
                 label="Zip"
+                required={true}
               />
               <FormComboSearchBox
                 name="tax_code"
