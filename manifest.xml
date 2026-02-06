@@ -65,9 +65,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="http://localhost:8000/ww_shell_gold_16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="http://localhost:8000/ww_shell_gold_32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="http://localhost:8000/ww_shell_gold_80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/vista16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/vista32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/vista80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="WW.Taskpane.Url" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/index.html"/>
