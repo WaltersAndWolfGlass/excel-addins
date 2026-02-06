@@ -7,8 +7,8 @@
   <Version>1.0.0.0</Version>
   <ProviderName>Walters &amp; Wolf</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="W&amp;W Excel Addins"/>
-  <Description DefaultValue="Functions for processing Walters &amp; Wolf Excel forms"/>
+  <DisplayName DefaultValue="W&amp;W Purchasing Addins"/>
+  <Description DefaultValue="Functions for Walters &amp; Wolf Purchasing Department"/>
   <IconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_32.png"/>
   <HighResolutionIconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_80.png"/>
   <SupportUrl DefaultValue="https://www.waltersandwolf.com/"/>
@@ -70,12 +70,12 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/vista80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="WW.Taskpane.Url" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/index.html"/>
+        <bt:Url id="WW.Taskpane.Url" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/purchasing/vistaexport/"/>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://www.waltersandwolf.com"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with W&amp;W Excel addins!"/>
-        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W Order Forms"/>
+        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W Purchasing"/>
         <bt:String id="WW.Tab1.Group1.Label" DefaultValue="Exports"/>
         <bt:String id="WW.VEB.Label" DefaultValue="Vista"/>
         <bt:String id="WW.VEB.SupertipTitle" DefaultValue="Vista Export"/>

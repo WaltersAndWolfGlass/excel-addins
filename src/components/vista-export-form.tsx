@@ -257,8 +257,6 @@ export function VistaExportForm() {
     let orderForm = new OrderForm();
     let lineItems = await orderForm.GetLineItems();
 
-    toast(JSON.stringify(lineItems));
-
     let today = new Date();
 
     let header: string = [
@@ -284,7 +282,6 @@ export function VistaExportForm() {
     ].join("\t");
 
     if (typeof lineItems === "string") {
-      toast(lineItems);
       return header;
     }
 
@@ -386,7 +383,7 @@ export function VistaExportForm() {
     <div className="m-8">
       <Toaster />
       <h1 className="flex items-center space-x-2 scroll-m-20 tracking-tight text-balance mb-8">
-        <img src="vista256.png" className="inline-block size-6" />
+        <img src="/vista256.png" className="inline-block size-6" />
         <span className="text-2xl font-extrabold ">Vista Export</span>
       </h1>
       <form id="export-vista-form" onSubmit={form.handleSubmit(onSubmit)} className="mb-8">
