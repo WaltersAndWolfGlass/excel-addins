@@ -9,8 +9,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="W&amp;W Purchasing Addins"/>
   <Description DefaultValue="Functions for Walters &amp; Wolf Purchasing Department"/>
-  <IconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/ww_shell_gold_80.png"/>
+  <IconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/wwpurchasing32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/wwpurchasing80.png"/>
   <SupportUrl DefaultValue="https://www.waltersandwolf.com/"/>
   <AppDomains>
     <AppDomain>https://waltersandwolfglass.github.io</AppDomain>
