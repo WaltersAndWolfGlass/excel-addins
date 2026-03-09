@@ -2,7 +2,7 @@ export async function insertText(
   context: any,
   sheet: any,
   address: string,
-  text: string
+  text: string,
 ) {
   try {
     const range = sheet.getRange(address);
@@ -20,7 +20,7 @@ export function getRangeAndLoadValues(sheet: any, address: string): any {
 export async function getValues(
   context: any,
   sheet: any,
-  address: string
+  address: string,
 ): Promise<Array<Array<any>>> {
   try {
     const range = getRangeAndLoadValues(sheet, address);
@@ -34,7 +34,7 @@ export async function getValues(
 export async function getValueAsString(
   context: any,
   sheet: any,
-  address: string
+  address: string,
 ): Promise<string | undefined> {
   try {
     const range = getRangeAndLoadValues(sheet, address);
@@ -69,7 +69,7 @@ export function getRangeDateValue(range: any): Date | undefined {
       return new Date(
         date.getUTCFullYear(),
         date.getUTCMonth(),
-        date.getUTCDate()
+        date.getUTCDate(),
       );
     }
   } else {
@@ -79,7 +79,7 @@ export function getRangeDateValue(range: any): Date | undefined {
 
 export async function getCustomDocProperty(
   context: any,
-  key: string
+  key: string,
 ): Promise<any> {
   try {
     let property = context.workbook.properties.custom.getItem(key);
@@ -89,4 +89,28 @@ export async function getCustomDocProperty(
   } catch (error) {
     return undefined;
   }
+}
+
+export interface TableData {
+  name: string;
+  columns: string[][];
+  data: any[][];
+}
+
+export async function getTableData(
+  context: any,
+  sheet: any,
+  table_name: string,
+): Promise<TableData> {
+  let table = sheet.tables.getItem(table_name);
+  let headerRange = table.getHeaderRowRange().load("values");
+  let dataRange = table.getDataBodyRange().load("values");
+
+  await context.sync();
+
+  return {
+    name: table_name,
+    columns: headerRange.values,
+    data: dataRange.values,
+  };
 }

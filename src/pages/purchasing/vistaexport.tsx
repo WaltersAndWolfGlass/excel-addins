@@ -7,6 +7,7 @@ const IndexPage: React.FC<PageProps> = () => {
   return (
     <>
       <main>
+        <Toaster />
         <VistaExportForm />
       </main>
       <footer>
@@ -16,7 +17,6 @@ const IndexPage: React.FC<PageProps> = () => {
           </small>
         </div>
       </footer>
-      <Toaster />
     </>
   )
 }

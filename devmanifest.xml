@@ -36,24 +36,48 @@
               <Group id="WW.Tab1.Group1">
                 <Label resid="WW.Tab1.Group1.Label"/>
                 <Icon>
-                  <bt:Image size="16" resid="Icon.16x16"/>
-                  <bt:Image size="32" resid="Icon.32x32"/>
-                  <bt:Image size="80" resid="Icon.80x80"/>
+                  <bt:Image size="16" resid="Icon.VE.16x16"/>
+                  <bt:Image size="32" resid="Icon.VE.32x32"/>
+                  <bt:Image size="80" resid="Icon.VE.80x80"/>
                 </Icon>
-                <Control xsi:type="Button" id="WW.VistaExportButton">
-                  <Label resid="WW.VEB.Label"/>
+                <Control xsi:type="Button" id="WW.VistaExport">
+                  <Label resid="WW.VE.Label"/>
                   <Supertip>
-                    <Title resid="WW.VEB.SupertipTitle"/>
-                    <Description resid="WW.VEB.SupertipText"/>
+                    <Title resid="WW.VE.SupertipTitle"/>
+                    <Description resid="WW.VE.SupertipText"/>
                   </Supertip>
                   <Icon>
-                    <bt:Image size="16" resid="Icon.16x16"/>
-                    <bt:Image size="32" resid="Icon.32x32"/>
-                    <bt:Image size="80" resid="Icon.80x80"/>
+                    <bt:Image size="16" resid="Icon.VE.16x16"/>
+                    <bt:Image size="32" resid="Icon.VE.32x32"/>
+                    <bt:Image size="80" resid="Icon.VE.80x80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
                     <TaskpaneId>ButtonId1</TaskpaneId>
-                    <SourceLocation resid="WW.Taskpane.Url"/>
+                    <SourceLocation resid="WW.VE.Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="WW.Tab1.Group2">
+                <Label resid="WW.Tab1.Group2.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.EO.16x16"/>
+                  <bt:Image size="32" resid="Icon.EO.32x32"/>
+                  <bt:Image size="80" resid="Icon.EO.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="WW.ExtrusionOptimizer">
+                  <Label resid="WW.EO.Label"/>
+                  <Supertip>
+                    <Title resid="WW.EO.SupertipTitle"/>
+                    <Description resid="WW.EO.SupertipText"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.EO.16x16"/>
+                    <bt:Image size="32" resid="Icon.EO.32x32"/>
+                    <bt:Image size="80" resid="Icon.EO.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId2</TaskpaneId>
+                    <SourceLocation resid="WW.EO.Taskpane.Url"/>
                   </Action>
                 </Control>
               </Group>
@@ -65,24 +89,32 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="http://localhost:8000/vista16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="http://localhost:8000/vista32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="http://localhost:8000/vista80.png"/>
+        <bt:Image id="Icon.VE.16x16" DefaultValue="http://localhost:8000/vista16.png"/>
+        <bt:Image id="Icon.VE.32x32" DefaultValue="http://localhost:8000/vista32.png"/>
+        <bt:Image id="Icon.VE.80x80" DefaultValue="http://localhost:8000/vista80.png"/>
+        <bt:Image id="Icon.EO.16x16" DefaultValue="http://localhost:8000/extrusion_optimizer_icon16.png"/>
+        <bt:Image id="Icon.EO.32x32" DefaultValue="http://localhost:8000/extrusion_optimizer_icon32.png"/>
+        <bt:Image id="Icon.EO.80x80" DefaultValue="http://localhost:8000/extrusion_optimizer_icon80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="WW.Taskpane.Url" DefaultValue="http://localhost:8000/index.html"/>
+        <bt:Url id="WW.VE.Taskpane.Url" DefaultValue="http://localhost:8000/purchasing/vistaexport/"/>
+        <bt:Url id="WW.EO.Taskpane.Url" DefaultValue="http://localhost:8000/engineering/extrusionoptimizer/"/>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="http://localhost:8000/index.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="W&amp;W DEV Excel Addins"/>
-        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W DEV Order Forms"/>
-        <bt:String id="WW.Tab1.Group1.Label" DefaultValue="Exports"/>
-        <bt:String id="WW.VEB.Label" DefaultValue="Vista"/>
-        <bt:String id="WW.VEB.SupertipTitle" DefaultValue="Vista Export"/>
+        <bt:String id="WW.Tab1.TabLabel" DefaultValue="W&amp;W DEV"/>
+        <bt:String id="WW.Tab1.Group1.Label" DefaultValue="Purchasing Exports"/>
+        <bt:String id="WW.VE.Label" DefaultValue="Vista"/>
+        <bt:String id="WW.VE.SupertipTitle" DefaultValue="Vista Export"/>
+        <bt:String id="WW.Tab1.Group2.Label" DefaultValue="Engineering Metal"/>
+        <bt:String id="WW.EO.Label" DefaultValue="Optimizer"/>
+        <bt:String id="WW.EO.SupertipTitle" DefaultValue="Extrusion Optimizer"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Get started!"/>
-        <bt:String id="WW.VEB.SupertipText" DefaultValue="Exports order form data for import into Vista"/>
+        <bt:String id="WW.VE.SupertipText" DefaultValue="Exports order form data for import into Vista"/>
+        <bt:String id="WW.EO.SupertipText" DefaultValue="Optimizes extrusion data onto stock lengths"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
