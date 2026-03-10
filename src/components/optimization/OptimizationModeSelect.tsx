@@ -6,12 +6,12 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-} from "./ui/select";
+} from "@/components/ui/select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   SetOptimizationModeContext,
   OptimizationModeContext,
-} from "./contexts/OptimizationContext";
+} from "@/components/contexts/OptimizationContext";
 
 export function OptimizationModeSelect() {
   const optMode = React.useContext(OptimizationModeContext);

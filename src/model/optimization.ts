@@ -165,14 +165,14 @@ export class Optimizer {
     return { optSettings, comparer };
   }
 
-  FindBestOptimization(
+  async FindBestOptimization(
     part_optimization_groups: PartOptimizationGroup[],
     optimization_mode: OptimizationMode,
     settings: CalculateStockLengthSettings,
-  ): {
+  ): Promise<{
     stockLengthPool: Record<string, StockLengthPool | undefined>;
     optimizations: Record<string, PartOptimization>;
-  } {
+  }> {
     const { optSettings, comparer } =
       this.GetSettingsAndComparer(optimization_mode);
 
@@ -287,11 +287,11 @@ export class Optimizer {
     };
   }
 
-  Optimize(
+  async Optimize(
     part_optimization_group: PartOptimizationGroup,
     optimization_mode: OptimizationMode,
     settings: StockLengthPool,
-  ): PartOptimization {
+  ): Promise<PartOptimization> {
     const { optSettings, comparer } =
       this.GetSettingsAndComparer(optimization_mode);
     let parts = part_optimization_group.parts.sort(comparer);

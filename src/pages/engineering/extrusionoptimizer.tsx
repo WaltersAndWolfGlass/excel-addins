@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { HeadFC, PageProps } from "gatsby";
 import { Toaster } from "@/components/ui/sonner";
-import { OptimizerForm } from "@/components/optimizer-form";
+import { OptimizerForm } from "@/components/optimization/OptimizerForm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const IndexPage: React.FC<PageProps> = () => {
@@ -13,7 +13,7 @@ const IndexPage: React.FC<PageProps> = () => {
       </main>
       <footer>
         <div className="text-right">
-          <small className="p-8">v0.0.1.0 2026-03-08</small>
+          <small className="p-8">v0.0.1.1 2026-03-09</small>
         </div>
       </footer>
     </TooltipProvider>
