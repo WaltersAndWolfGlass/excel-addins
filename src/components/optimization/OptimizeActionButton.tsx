@@ -11,6 +11,7 @@ import {
 } from "@/components/contexts/OptimizationContext";
 import {
   CalculateStockLengthSettings,
+  GetOptimizationSettings,
   Optimizer,
   PartOptimizationSettings,
   StockLengthPool,
@@ -30,7 +31,7 @@ import {
   PartOptimizationSettingsStore,
   PartOptimizationStore,
 } from "@/components/optimization/OptimizerForm";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -61,8 +62,16 @@ import {
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { PlusIcon, TrashIcon } from "lucide-react";
+import { PartSizeChart } from "./PartSizeChart";
 
-export function OptimizeActionButton({ ...props }) {
+const defaultSettings = {
+  type: "calculate_sizes",
+  maximum_number_of_sizes: 1,
+  size_minimum: 180,
+  size_maximum: 300,
+} as CalculateStockLengthSettings;
+
+function InternalOptimizeActionButton({ ...props }) {
   const [isOptimizing, startOptimization] = React.useTransition();
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
@@ -91,13 +100,6 @@ export function OptimizeActionButton({ ...props }) {
   const [stockLengths, setStockLengths] = React.useState<StockLengths[]>([]);
 
   const setInitialSettings = React.useMemo(() => {
-    const defaultSettings = {
-      type: "calculate_sizes",
-      maximum_number_of_sizes: 1,
-      size_minimum: 180,
-      size_maximum: 300,
-    } as CalculateStockLengthSettings;
-
     const initialSettings =
       partGroups
         .filter((pg) => selectedStateStore[pg.key] === true)
@@ -149,6 +151,13 @@ export function OptimizeActionButton({ ...props }) {
       setStockLengths(initialSettings.stock_length_pool);
     return true;
   }, [partGroups, selectedStateStore, partOptSettingsStore]);
+
+  const partsForChart = partGroups
+    .filter((pg) => selectedStateStore[pg.key] === true)
+    .map((pg) => pg.part_optimization_groups)
+    .flat()
+    .map((pog) => pog.parts)
+    .flat();
 
   const partOptStore = React.useContext(PartOptimizationStoreContext);
   const setPartOptStore = React.useContext(SetPartOptimizationStoreContext);
@@ -263,19 +272,7 @@ export function OptimizeActionButton({ ...props }) {
             </Select>
           </Field>
           {optType === "calculate_sizes" && (
-            <>
-              <Field>
-                <FieldLabel>
-                  Max Number of Different Stock Length Sizes: {maxNumSizes}
-                </FieldLabel>
-                <Slider
-                  value={[maxNumSizes]}
-                  onValueChange={(v) => setMaxNumSizes(v[0])}
-                  min={1}
-                  max={4}
-                  step={1}
-                />
-              </Field>
+            <FieldSet>
               <Field>
                 <FieldLabel>
                   Stock Length Size Range: {sizeRange[0]} - {sizeRange[1]}
@@ -288,151 +285,161 @@ export function OptimizeActionButton({ ...props }) {
                   step={1}
                 />
               </Field>
-            </>
+            </FieldSet>
           )}
           {optType === "stock_length_pool" && (
-            <Field>
-              <FieldLabel>Stock Lengths</FieldLabel>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Std</TableHead>
-                    <TableHead colSpan={2}>Size</TableHead>
-                    <TableHead>Quantity Available</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stockLengths.map((s, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="w-[1%]">
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Checkbox
-                              checked={s.is_standard_length}
-                              onCheckedChange={(x) => {
+            <FieldSet>
+              <Field>
+                <FieldLabel>Part Sizes</FieldLabel>
+                <PartSizeChart
+                  className="min-h-10"
+                  parts={partsForChart}
+                  stklens={stockLengths}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Stock Lengths</FieldLabel>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Std</TableHead>
+                      <TableHead colSpan={2}>Size</TableHead>
+                      <TableHead>Quantity Available</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stockLengths.map((s, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="w-[1%]">
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Checkbox
+                                checked={s.is_standard_length}
+                                onCheckedChange={(x) => {
+                                  const oldStockLength = stockLengths[i];
+                                  const newStockLength = {
+                                    ...oldStockLength,
+                                    is_standard_length: x ? true : false,
+                                  };
+                                  const newStockLengths = [...stockLengths];
+                                  newStockLengths[i] = newStockLength;
+                                  setStockLengths(newStockLengths);
+                                }}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-[33vw]">
+                                Check to indicate a standard stock length size.
+                                Standard stock lengths do not automatically have
+                                2-3&quot; trimmed from each end.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell className="w-[1%]">
+                          <InputGroup>
+                            <InputGroupInput
+                              className="min-w-16"
+                              placeholder="Length"
+                              value={s.length}
+                              type="number"
+                              onChange={(e) => {
                                 const oldStockLength = stockLengths[i];
                                 const newStockLength = {
                                   ...oldStockLength,
-                                  is_standard_length: x ? true : false,
+                                  length: Number(e.target.value),
                                 };
                                 const newStockLengths = [...stockLengths];
                                 newStockLengths[i] = newStockLength;
                                 setStockLengths(newStockLengths);
                               }}
                             />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-[33vw]">
-                              Check to indicate a standard stock length size.
-                              Standard stock lengths do not automatically have
-                              2-3&quot; trimmed from each end.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="w-[1%]">
-                        <InputGroup>
-                          <InputGroupInput
-                            className="min-w-16"
-                            placeholder="Length"
-                            value={s.length}
-                            type="number"
-                            onChange={(e) => {
+                            <InputGroupAddon align="inline-end">
+                              inches
+                            </InputGroupAddon>
+                          </InputGroup>
+                        </TableCell>
+                        <TableCell>
+                          <Slider
+                            className="w-full"
+                            min={96}
+                            max={330}
+                            value={[s.length]}
+                            onValueChange={(v) => {
                               const oldStockLength = stockLengths[i];
                               const newStockLength = {
                                 ...oldStockLength,
-                                length: Number(e.target.value),
+                                length: Number(v[0]),
                               };
                               const newStockLengths = [...stockLengths];
                               newStockLengths[i] = newStockLength;
                               setStockLengths(newStockLengths);
                             }}
                           />
-                          <InputGroupAddon align="inline-end">
-                            inches
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </TableCell>
+                        </TableCell>
+                        <TableCell className="w-[1%]">
+                          <Input
+                            value={s.quantity === "unlimited" ? "" : s.quantity}
+                            placeholder="unlimited"
+                            type="number"
+                            onChange={(e) => {
+                              const oldStockLength = stockLengths[i];
+                              const newStockLength = {
+                                ...oldStockLength,
+                                quantity: (e.target.value
+                                  ? Number(e.target.value)
+                                  : "unlimited") as number | "unlimited",
+                              };
+                              const newStockLengths = [...stockLengths];
+                              newStockLengths[i] = newStockLength;
+                              setStockLengths(newStockLengths);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="w-[1%]">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const newStockLengths = [...stockLengths];
+                              newStockLengths.splice(i, 1);
+                              setStockLengths(newStockLengths);
+                            }}
+                          >
+                            <TrashIcon className="text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell />
+                      <TableCell />
                       <TableCell>
-                        <Slider
-                          className="w-full"
-                          min={96}
-                          max={330}
-                          value={[s.length]}
-                          onValueChange={(v) => {
-                            const oldStockLength = stockLengths[i];
-                            const newStockLength = {
-                              ...oldStockLength,
-                              length: Number(v[0]),
-                            };
-                            const newStockLengths = [...stockLengths];
-                            newStockLengths[i] = newStockLength;
-                            setStockLengths(newStockLengths);
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="w-[1%]">
-                        <Input
-                          value={s.quantity === "unlimited" ? "" : s.quantity}
-                          placeholder="unlimited"
-                          type="number"
-                          onChange={(e) => {
-                            const oldStockLength = stockLengths[i];
-                            const newStockLength = {
-                              ...oldStockLength,
-                              quantity: (e.target.value
-                                ? Number(e.target.value)
-                                : "unlimited") as number | "unlimited",
-                            };
-                            const newStockLengths = [...stockLengths];
-                            newStockLengths[i] = newStockLength;
-                            setStockLengths(newStockLengths);
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="w-[1%]">
                         <Button
                           variant="outline"
                           onClick={() => {
-                            const newStockLengths = [...stockLengths];
-                            newStockLengths.splice(i, 1);
+                            const newStockLength: StockLengths = {
+                              is_standard_length: false,
+                              length: 280,
+                              quantity: "unlimited",
+                            };
+                            const newStockLengths = [
+                              ...stockLengths,
+                              newStockLength,
+                            ];
                             setStockLengths(newStockLengths);
                           }}
                         >
-                          <TrashIcon className="text-red-700" />
+                          <PlusIcon />
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
-                  <TableRow>
-                    <TableCell />
-                    <TableCell />
-                    <TableCell />
-                    <TableCell />
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const newStockLength: StockLengths = {
-                            is_standard_length: false,
-                            length: 280,
-                            quantity: "unlimited",
-                          };
-                          const newStockLengths = [
-                            ...stockLengths,
-                            newStockLength,
-                          ];
-                          setStockLengths(newStockLengths);
-                        }}
-                      >
-                        <PlusIcon />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Field>
+                  </TableBody>
+                </Table>
+              </Field>
+            </FieldSet>
           )}
         </FieldGroup>
         <DialogFooter>
@@ -445,3 +452,5 @@ export function OptimizeActionButton({ ...props }) {
     </Dialog>
   );
 }
+
+export const OptimizeActionButton = React.memo(InternalOptimizeActionButton);

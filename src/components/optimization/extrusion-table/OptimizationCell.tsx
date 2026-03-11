@@ -49,7 +49,7 @@ function InternalOptimizationCell({
     optimizationResults.push(
       <Tooltip key="errors">
         <TooltipTrigger>
-          <AlertOctagonIcon className="size-4 text-red-600 ms-2" />
+          <AlertOctagonIcon className="size-4 text-destructive ms-2" />
         </TooltipTrigger>
         <TooltipContent>
           <div className="max-w-[33vw] text-pretty">
@@ -70,7 +70,7 @@ function InternalOptimizationCell({
     optimizationResults.push(
       <Tooltip key="warnings">
         <TooltipTrigger>
-          <TriangleAlertIcon className="text-amber-400 size-4 ms-2" />
+          <TriangleAlertIcon className="text-warning size-4 ms-2" />
         </TooltipTrigger>
         <TooltipContent>
           <div className="max-w-[33vw] text-pretty">

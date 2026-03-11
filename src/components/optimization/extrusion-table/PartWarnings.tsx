@@ -37,7 +37,7 @@ function InternalPartWarnings({
   return (
     <Tooltip>
       <TooltipTrigger className={className}>
-        <TriangleAlertIcon className="text-amber-400 size-4" />
+        <TriangleAlertIcon className="text-warning size-4" />
       </TooltipTrigger>
       <TooltipContent>
         <div className="max-w-[33vw]">

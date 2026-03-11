@@ -122,30 +122,50 @@ const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) =>
     {} as Record<K, T[]>,
   );
 
-export class Optimizer {
-  private GetOptimizationSettings(
-    mode: OptimizationMode,
-  ): OptimizationSettings {
-    switch (mode) {
-      case "estimate":
-        return {
-          saw_kerf: 0.25,
-          end_trim: 3,
-          mode: mode,
-          use_fab_order: false,
-        };
-      case "takeoff":
-        return { saw_kerf: 0.25, end_trim: 3, mode: mode, use_fab_order: true };
-      case "fabrication":
-        return { saw_kerf: 0.25, end_trim: 2, mode: mode, use_fab_order: true };
-    }
+export function GetOptimizationSettings(
+  mode: OptimizationMode,
+): OptimizationSettings {
+  switch (mode) {
+    case "estimate":
+      return {
+        saw_kerf: 0.25,
+        end_trim: 3,
+        mode: mode,
+        use_fab_order: false,
+      };
+    case "takeoff":
+      return { saw_kerf: 0.25, end_trim: 3, mode: mode, use_fab_order: true };
+    case "fabrication":
+      return { saw_kerf: 0.25, end_trim: 2, mode: mode, use_fab_order: true };
   }
+}
 
+export function GetPartLengthCalculator(
+  mode: OptimizationMode,
+): (p: Part) => number {
+  switch (mode) {
+    case "estimate":
+      return (p) => {
+        if (p.length > 10) return Math.ceil(Math.ceil(p.length) / 6) * 6;
+        return p.length;
+      };
+    case "takeoff":
+      return (p) => {
+        if (p.length > 10) return Math.ceil(p.length);
+        return p.length;
+      };
+    case "fabrication":
+    default:
+      return (p) => p.length;
+  }
+}
+
+export class Optimizer {
   private GetSettingsAndComparer(optimization_mode: OptimizationMode): {
     optSettings: OptimizationSettings;
     comparer: (a: Part, b: Part) => number;
   } {
-    const optSettings = this.GetOptimizationSettings(optimization_mode);
+    const optSettings = GetOptimizationSettings(optimization_mode);
     const baseComparer = (a: Part, b: Part) => {
       if (a.length < b.length) return -1;
       if (a.length > b.length) return 1;
@@ -321,25 +341,8 @@ export class Optimizer {
       return result;
     }
 
-    var getPartLength: (p: Part) => number;
-    switch (optSettings.mode) {
-      case "estimate":
-        getPartLength = (p) => {
-          if (p.length > 10) return Math.ceil(Math.ceil(p.length) / 6) * 6;
-          return p.length;
-        };
-        break;
-      case "takeoff":
-        getPartLength = (p) => {
-          if (p.length > 10) return Math.ceil(p.length);
-          return p.length;
-        };
-        break;
-      case "fabrication":
-      default:
-        getPartLength = (p) => p.length;
-        break;
-    }
+    const getPartLength = GetPartLengthCalculator(optSettings.mode);
+
     //clone parts with rounded lengths
     let parts: Part[] = [];
     for (let index = 0; index < sortedParts.length; index++) {
