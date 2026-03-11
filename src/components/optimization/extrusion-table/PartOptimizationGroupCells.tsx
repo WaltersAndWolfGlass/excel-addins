@@ -29,47 +29,57 @@ function InternalPartOptimizationGroupCells({
   if (partGroup.part_optimization_groups.length > 1) groupRowSpan++;
 
   if (pogIndex === "totals") {
-    const totalsOptimization = partGroup.part_optimization_groups.reduce(
-      (o, pog) => {
-        const partOpt = partOptStore[pog.key];
-        if (partOpt === undefined || partOpt === "optimizing") return o;
-        for (
-          let slIndex = 0;
-          slIndex < partOpt.total_stock_lengths.length;
-          slIndex++
-        ) {
-          const sl = partOpt.total_stock_lengths[slIndex];
-          let oSl = o.total_stock_lengths.find(
-            (x) =>
-              x.is_standard_length === sl.is_standard_length &&
-              x.length === sl.length,
-          );
-          if (oSl === undefined) {
-            oSl = { ...sl, quantity: 0 };
-            o.total_stock_lengths.push(oSl);
-          }
-          if (oSl.quantity !== "unlimited" && sl.quantity !== "unlimited")
-            oSl.quantity += sl.quantity;
-        }
-        o.net_parts += partOpt.net_parts;
-        o.gross_length += partOpt.gross_length;
-        o.net_part_length += partOpt.net_part_length;
-        o.yield = o.net_part_length / o.gross_length;
-        return o;
-      },
-      {
-        total_stock_lengths: [],
-        cut_list: [],
-        cut_stock_lengths: [],
-        net_parts: 0,
-        gross_length: 0,
-        net_part_length: 0,
-        yield: 0,
-        successful: true,
-        warning_messages: [],
-        error_messages: [],
-      } as PartOptimization,
+    const partOpts = partGroup.part_optimization_groups.map(
+      (pog) => partOptStore[pog.key],
     );
+    let totalsOptimization: PartOptimization | undefined | "optimizing" =
+      undefined;
+    if (partOpts.every((o) => o === undefined)) {
+      totalsOptimization = undefined;
+    } else if (partOpts.some((o) => o === "optimizing")) {
+      totalsOptimization = "optimizing";
+    } else {
+      totalsOptimization = partOpts.reduce<PartOptimization>(
+        (o, partOpt) => {
+          if (partOpt === undefined || partOpt === "optimizing") return o;
+          for (
+            let slIndex = 0;
+            slIndex < partOpt.total_stock_lengths.length;
+            slIndex++
+          ) {
+            const sl = partOpt.total_stock_lengths[slIndex];
+            let oSl = o.total_stock_lengths.find(
+              (x) =>
+                x.is_standard_length === sl.is_standard_length &&
+                x.length === sl.length,
+            );
+            if (oSl === undefined) {
+              oSl = { ...sl, quantity: 0 };
+              o.total_stock_lengths.push(oSl);
+            }
+            if (oSl.quantity !== "unlimited" && sl.quantity !== "unlimited")
+              oSl.quantity += sl.quantity;
+          }
+          o.net_parts += partOpt.net_parts;
+          o.gross_length += partOpt.gross_length;
+          o.net_part_length += partOpt.net_part_length;
+          o.yield = o.net_part_length / o.gross_length;
+          return o;
+        },
+        {
+          total_stock_lengths: [],
+          cut_list: [],
+          cut_stock_lengths: [],
+          net_parts: 0,
+          gross_length: 0,
+          net_part_length: 0,
+          yield: 0,
+          successful: true,
+          warning_messages: [],
+          error_messages: [],
+        } as PartOptimization,
+      );
+    }
     return (
       <>
         <TableCell

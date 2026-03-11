@@ -75,19 +75,18 @@ function InternalExtrusionTable() {
       </TableHeader>
       <TableBody>
         {partGroups.map((pg) => {
+          const setChecked = (x: boolean) =>
+            setSelectionStateStore({ ...selectionStateStore, [pg.key]: x });
+          const checked = selectionStateStore[pg.key] === true;
+          const toggleChecked = () => setChecked(!checked);
           const rows = pg.part_optimization_groups.map((pog, pogIndex) => (
-            <TableRow key={getPartOptGroupRowKey(pog)}>
+            <TableRow key={getPartOptGroupRowKey(pog)} onClick={toggleChecked}>
               {pogIndex === 0 && (
                 <SelectRowCell
                   key={getSelectCellKey(pg)}
                   partGroup={pg}
-                  checked={selectionStateStore[pg.key] === true}
-                  setChecked={(x) =>
-                    setSelectionStateStore({
-                      ...selectionStateStore,
-                      [pg.key]: x,
-                    })
-                  }
+                  checked={checked}
+                  setChecked={setChecked}
                 />
               )}
               <PartOptimizationGroupCells
@@ -99,7 +98,10 @@ function InternalExtrusionTable() {
           ));
           if (pg.part_optimization_groups.length > 1) {
             rows.push(
-              <TableRow key={getPartGroupTotalsRowKey(pg)}>
+              <TableRow
+                key={getPartGroupTotalsRowKey(pg)}
+                onClick={toggleChecked}
+              >
                 <PartOptimizationGroupCells
                   key={getPartGroupTotalsCellsKey(pg)}
                   partGroup={pg}

@@ -7,12 +7,12 @@ import {
   StockLengths,
 } from "@/model/optimization";
 import { toast } from "sonner";
-import { OptimizationModeSelect } from "./OptimizationModeSelect";
 import { OptimizationContext } from "@/components/contexts/OptimizationContext";
-import { Field, FieldSet } from "@/components/ui/field";
 import { OptimizeActionButton } from "./OptimizeActionButton";
-import { ImportExtrusionsButton } from "./ImportExtrusionsButton";
+import { ImportPartsButton } from "./ImportPartsButton";
 import { ExtrusionTable } from "./extrusion-table/ExtrusionTable";
+import { Button } from "../ui/button";
+import { DownloadIcon } from "lucide-react";
 
 export function getOptKey(partOptGroupKey: string, stklen: StockLengths) {
   return `${partOptGroupKey} | stklen: ${stklen.length}${stklen.is_standard_length ? " std" : ""}`;
@@ -32,7 +32,9 @@ export type ExcelState = "ready" | "unchecked" | "failure";
 export function OptimizerForm() {
   const [excelState, setExcelState] = React.useState<ExcelState>("unchecked");
   const [partGroups, setPartGroups] = React.useState<PartGroup[]>([]);
-  const [optMode, setOptMode] = React.useState<OptimizationMode>("estimate");
+  const [optMode, setOptMode] = React.useState<OptimizationMode | undefined>(
+    undefined,
+  );
   const [selectionStateStore, setSelectionStateStore] =
     React.useState<SelectionStateStore>({});
   const [partOptSettings, setPartOptSettings] =
@@ -55,32 +57,35 @@ export function OptimizerForm() {
   }, []);
 
   return (
-    <div className="m-8">
-      <OptimizationContext
-        excelState={excelState}
-        setExcelState={setExcelState}
-        partGroups={partGroups}
-        setPartGroups={setPartGroups}
-        optMode={optMode}
-        setOptMode={setOptMode}
-        selectionStateStore={selectionStateStore}
-        setSelectionStateStore={setSelectionStateStore}
-        partOptSettings={partOptSettings}
-        setPartOptSettings={setPartOptSettings}
-        optimizations={optimizations}
-        setOptimizations={setOptimizations}
-      >
-        <FieldSet>
-          <OptimizationModeSelect />
-          <Field>
-            <ImportExtrusionsButton />
-          </Field>
-          <Field className="sticky top-2 bg-background z-50">
-            <OptimizeActionButton />
-          </Field>
-          <ExtrusionTable />
-        </FieldSet>
-      </OptimizationContext>
-    </div>
+    <OptimizationContext
+      excelState={excelState}
+      setExcelState={setExcelState}
+      partGroups={partGroups}
+      setPartGroups={setPartGroups}
+      optMode={optMode}
+      setOptMode={setOptMode}
+      selectionStateStore={selectionStateStore}
+      setSelectionStateStore={setSelectionStateStore}
+      partOptSettings={partOptSettings}
+      setPartOptSettings={setPartOptSettings}
+      optimizations={optimizations}
+      setOptimizations={setOptimizations}
+    >
+      <div className="sticky top-2 flex flex-row gap-2 z-50 mb-8">
+        <div className="bg-background">
+          <ImportPartsButton className="shadow-md" />
+        </div>
+        <div className="grow" />
+        <div className="bg-background">
+          <OptimizeActionButton className="shadow-md min-w-40" />
+        </div>
+        <div className="bg-background">
+          <Button className="shadow-md" variant="outline">
+            <DownloadIcon />
+          </Button>
+        </div>
+      </div>
+      <ExtrusionTable />
+    </OptimizationContext>
   );
 }

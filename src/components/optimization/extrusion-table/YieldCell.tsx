@@ -4,6 +4,7 @@ import { PartOptimization } from "@/model/optimization";
 import { TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 function InternalYieldCell({
   optimization,

@@ -11,7 +11,6 @@ import {
 } from "@/components/contexts/OptimizationContext";
 import {
   CalculateStockLengthSettings,
-  GetOptimizationSettings,
   Optimizer,
   PartOptimizationSettings,
   StockLengthPool,
@@ -63,6 +62,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { PartSizeChart } from "./PartSizeChart";
+import { cn } from "@/lib/utils";
+import { OptimizationModeSelect } from "./OptimizationModeSelect";
 
 const defaultSettings = {
   type: "calculate_sizes",
@@ -71,7 +72,7 @@ const defaultSettings = {
   size_maximum: 300,
 } as CalculateStockLengthSettings;
 
-function InternalOptimizeActionButton({ ...props }) {
+function InternalOptimizeActionButton({ className }: { className?: string }) {
   const [isOptimizing, startOptimization] = React.useTransition();
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
@@ -163,6 +164,7 @@ function InternalOptimizeActionButton({ ...props }) {
   const setPartOptStore = React.useContext(SetPartOptimizationStoreContext);
 
   const handleOptimize = () => {
+    if (optMode === undefined) return;
     setDialogOpen(false);
 
     const partOptSettings: PartOptimizationSettings =
@@ -244,7 +246,7 @@ function InternalOptimizeActionButton({ ...props }) {
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full" disabled={selectedCount === 0}>
+        <Button className={cn(className)} disabled={selectedCount === 0}>
           Optimize {selectedCount} Part{selectedCount === 1 ? "" : "s"}
         </Button>
       </DialogTrigger>
@@ -253,6 +255,10 @@ function InternalOptimizeActionButton({ ...props }) {
           <DialogTitle>Optimization Options</DialogTitle>
         </DialogHeader>
         <FieldGroup>
+          <Field>
+            <FieldLabel>Optimization Mode</FieldLabel>
+            <OptimizationModeSelect />
+          </Field>
           <Field>
             <FieldLabel>Optimization Type</FieldLabel>
             <Select value={optType} onValueChange={setOptType}>
@@ -272,23 +278,21 @@ function InternalOptimizeActionButton({ ...props }) {
             </Select>
           </Field>
           {optType === "calculate_sizes" && (
-            <FieldSet>
-              <Field>
-                <FieldLabel>
-                  Stock Length Size Range: {sizeRange[0]} - {sizeRange[1]}
-                </FieldLabel>
-                <Slider
-                  value={sizeRange}
-                  onValueChange={setSizeRange}
-                  min={96}
-                  max={330}
-                  step={1}
-                />
-              </Field>
-            </FieldSet>
+            <Field>
+              <FieldLabel>
+                Stock Length Size Range: {sizeRange[0]} - {sizeRange[1]}
+              </FieldLabel>
+              <Slider
+                value={sizeRange}
+                onValueChange={setSizeRange}
+                min={96}
+                max={330}
+                step={1}
+              />
+            </Field>
           )}
           {optType === "stock_length_pool" && (
-            <FieldSet>
+            <>
               <Field>
                 <FieldLabel>Part Sizes</FieldLabel>
                 <PartSizeChart
@@ -439,10 +443,10 @@ function InternalOptimizeActionButton({ ...props }) {
                   </TableBody>
                 </Table>
               </Field>
-            </FieldSet>
+            </>
           )}
         </FieldGroup>
-        <DialogFooter>
+        <DialogFooter className="mt-8">
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>

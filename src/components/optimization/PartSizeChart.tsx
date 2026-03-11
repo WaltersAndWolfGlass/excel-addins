@@ -21,11 +21,10 @@ import {
 } from "@/model/optimization";
 import { cn } from "@/lib/utils";
 import { OptimizationModeContext } from "../contexts/OptimizationContext";
-import { spawn } from "child_process";
 
 const chartConfig = {
   sizes: {
-    label: "Part Sizes",
+    label: "Cut Size",
     color: "var(--chart-1)",
   },
 };
@@ -84,6 +83,8 @@ function InternalPartSizeChart({
   className?: string;
 }) {
   const optMode = React.useContext(OptimizationModeContext);
+  if (optMode === undefined) return <></>;
+
   const optSettings = GetOptimizationSettings(optMode);
   const partLengthCalc = GetPartLengthCalculator(optMode);
 
@@ -145,20 +146,23 @@ function InternalPartSizeChart({
           unit='"'
         >
           <Label
-            value="Size"
+            value="Cut Size"
             angle={-90}
             position="insideLeft"
             textAnchor="middle"
             offset={0}
           />
         </YAxis>
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip
+          content={<ChartTooltipContent nameKey="sizes" hideIndicator={true} />}
+        />
         <Area
           dataKey="size"
           type="stepAfter"
           fill="var(--color-primary)"
           fillOpacity={0.4}
           stroke="var(--color-primary)"
+          unit='"'
         />
         {stklens.length > 0 &&
           stklens
@@ -175,7 +179,7 @@ function InternalPartSizeChart({
                 <ReferenceLine
                   y={s.length - 2 * optSettings.end_trim}
                   stroke="var(--color-gold)"
-                  strokeDasharray="3 3"
+                  strokeDasharray="6 3"
                   strokeOpacity={0.6}
                 />
               ),

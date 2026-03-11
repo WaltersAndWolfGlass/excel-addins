@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AlertOctagonIcon, TriangleAlertIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 function InternalOptimizationCell({
   optimization,
@@ -23,8 +24,9 @@ function InternalOptimizationCell({
   if (optimization === "optimizing")
     return (
       <TableCell rowSpan={rowSpan}>
-        <div className="flex flex-row">
-          <Skeleton className="h-4 w-full" />
+        <div className="flex flex-row gap-2">
+          <Spinner />
+          <Skeleton className="h-4 w-12" />
         </div>
       </TableCell>
     );

@@ -16,10 +16,6 @@ function InternalSelectRowCell({
 }) {
   console.log("Render SelectRowCell");
 
-  const handleClickCell = () => {
-    setChecked(!checked);
-  };
-
   return (
     <TableCell
       rowSpan={
@@ -27,7 +23,6 @@ function InternalSelectRowCell({
           ? partGroup.part_optimization_groups.length + 1
           : 1
       }
-      onClick={handleClickCell}
     >
       <Checkbox
         checked={checked}

@@ -10,54 +10,54 @@ import { ExcelExtrusionData } from "@/model/excel_extrusion_data";
 import { Optimizer } from "@/model/optimization";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
-function InternalImportExtrusionsButton() {
-  const [readingExtrusions, setReadingExtrusions] = React.useState(false);
+function InternalImportPartsButton({ className }: { className?: string }) {
+  const [readingParts, setReadingParts] = React.useState(false);
   const excelState = React.useContext(ExcelStateContext);
   const setPartGroups = React.useContext(SetPartGroupsContext);
   const setSelectionStateStore = React.useContext(
     SetSelectionStateStoreContext,
   );
   const setOptimizations = React.useContext(SetPartOptimizationStoreContext);
-  const [_, startImportingExtrusions] = React.useTransition();
+  const [_, startImportingParts] = React.useTransition();
 
-  async function readExtrusions() {
-    setReadingExtrusions(true);
+  async function readParts() {
+    setReadingParts(true);
     setSelectionStateStore({});
 
-    startImportingExtrusions(async () => {
+    startImportingParts(async () => {
       try {
         const excelExtrusionData = new ExcelExtrusionData();
         const parts = await excelExtrusionData.GetParts();
         const optimizer = new Optimizer();
         const groups = await optimizer.GroupParts(parts);
 
-        startImportingExtrusions(() => {
+        startImportingParts(() => {
           setPartGroups(groups);
           setOptimizations({});
         });
       } catch (error) {
-        toast("Import Extrusions failed. Check the console log for details.");
+        toast("Import Parts failed. Check the console log for details.");
         console.error(error);
       }
-      startImportingExtrusions(() => {
-        setReadingExtrusions(false);
+      startImportingParts(() => {
+        setReadingParts(false);
       });
     });
   }
 
   return (
     <Button
+      className={cn(className)}
       variant="outline"
-      onClick={readExtrusions}
-      disabled={excelState !== "ready" || readingExtrusions}
+      onClick={readParts}
+      disabled={excelState !== "ready" || readingParts}
     >
-      Import Extrusions from Excel
-      {readingExtrusions && <Spinner />}
+      Import Parts from Excel
+      {readingParts && <Spinner />}
     </Button>
   );
 }
 
-export const ImportExtrusionsButton = React.memo(
-  InternalImportExtrusionsButton,
-);
+export const ImportPartsButton = React.memo(InternalImportPartsButton);

@@ -17,10 +17,11 @@ export const SetPartGroupsContext = React.createContext<
   (p: PartGroup[]) => void
 >((_) => {});
 
-export const OptimizationModeContext =
-  React.createContext<OptimizationMode>("estimate");
+export const OptimizationModeContext = React.createContext<
+  OptimizationMode | undefined
+>(undefined);
 export const SetOptimizationModeContext = React.createContext<
-  (m: OptimizationMode) => void
+  (m: OptimizationMode | undefined) => void
 >((_) => {});
 
 export const SelectionStateStoreContext =
@@ -60,8 +61,8 @@ function InternalOptimizationContext({
   setExcelState: (s: ExcelState) => void;
   partGroups: PartGroup[];
   setPartGroups: (p: PartGroup[]) => void;
-  optMode: OptimizationMode;
-  setOptMode: (m: OptimizationMode) => void;
+  optMode: OptimizationMode | undefined;
+  setOptMode: (m: OptimizationMode | undefined) => void;
   selectionStateStore: SelectionStateStore;
   setSelectionStateStore: (s: SelectionStateStore) => void;
   partOptSettings: PartOptimizationSettingsStore;
