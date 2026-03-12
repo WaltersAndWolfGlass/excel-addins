@@ -2,6 +2,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
   ExcelStateContext,
+  PartGroupsContext,
   SetPartGroupsContext,
   SetPartOptimizationStoreContext,
   SetSelectionStateStoreContext,
@@ -11,10 +12,20 @@ import { Optimizer } from "@/model/optimization";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 function InternalImportPartsButton({ className }: { className?: string }) {
   const [readingParts, setReadingParts] = React.useState(false);
   const excelState = React.useContext(ExcelStateContext);
+  const partGroups = React.useContext(PartGroupsContext);
   const setPartGroups = React.useContext(SetPartGroupsContext);
   const setSelectionStateStore = React.useContext(
     SetSelectionStateStoreContext,
@@ -47,16 +58,41 @@ function InternalImportPartsButton({ className }: { className?: string }) {
     });
   }
 
+  const renderMainButton = (onClick?: () => void) => {
+    return (
+      <Button
+        className={cn(className)}
+        variant="outline"
+        onClick={onClick}
+        disabled={excelState !== "ready" || readingParts}
+      >
+        Import Parts from Excel
+        {readingParts && <Spinner />}
+      </Button>
+    );
+  };
+
+  if (partGroups.length == 0) return renderMainButton(readParts);
+
   return (
-    <Button
-      className={cn(className)}
-      variant="outline"
-      onClick={readParts}
-      disabled={excelState !== "ready" || readingParts}
-    >
-      Import Parts from Excel
-      {readingParts && <Spinner />}
-    </Button>
+    <Dialog>
+      <DialogTrigger asChild>{renderMainButton()}</DialogTrigger>
+      <DialogContent>
+        <DialogTitle>Import Parts</DialogTitle>
+        <DialogDescription className="text-pretty">
+          Importing parts will replace all the parts and optimizations in the
+          form. Are you sure?
+        </DialogDescription>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button onClick={readParts}>Import</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

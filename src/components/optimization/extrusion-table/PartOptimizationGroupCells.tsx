@@ -21,7 +21,6 @@ function InternalPartOptimizationGroupCells({
   partGroup: PartGroup;
   pogIndex: number | "totals";
 }) {
-  console.log("Render PartOptimizationGroupCells");
   const partOptStore = React.useContext(PartOptimizationStoreContext);
 
   const singleRowMode = partGroup.part_optimization_groups.length === 1;

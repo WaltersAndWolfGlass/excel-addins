@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,8 +76,6 @@ const defaultSettings = {
 function InternalOptimizeActionButton({ className }: { className?: string }) {
   const [isOptimizing, startOptimization] = React.useTransition();
   const [dialogOpen, setDialogOpen] = React.useState(false);
-
-  console.log("Render OptimizeActionButton");
 
   const partGroups = React.useContext(PartGroupsContext);
 
@@ -254,6 +253,9 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
         <DialogHeader>
           <DialogTitle>Optimization Options</DialogTitle>
         </DialogHeader>
+        <DialogDescription className="hidden">
+          Choose how you want to optimize these parts.
+        </DialogDescription>
         <FieldGroup>
           <Field>
             <FieldLabel>Optimization Mode</FieldLabel>

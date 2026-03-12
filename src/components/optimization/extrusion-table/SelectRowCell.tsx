@@ -14,8 +14,6 @@ function InternalSelectRowCell({
   checked: boolean;
   setChecked: (s: boolean) => void;
 }) {
-  console.log("Render SelectRowCell");
-
   return (
     <TableCell
       rowSpan={

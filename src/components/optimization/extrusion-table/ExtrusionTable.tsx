@@ -27,7 +27,6 @@ const getPartGroupTotalsCellsKey = (partGroup: PartGroup) =>
   partGroup.key + " | totals cells";
 
 function InternalExtrusionTable() {
-  console.log("Render ExtrusionTable");
   const partGroups = React.useContext(PartGroupsContext);
   const selectionStateStore = React.useContext(SelectionStateStoreContext);
   const setSelectionStateStore = React.useContext(
