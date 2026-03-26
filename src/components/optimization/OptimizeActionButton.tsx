@@ -13,6 +13,8 @@ import {
   CalculateStockLengthSettings,
   Optimizer,
   PartOptimizationSettings,
+  PartOptimizationSettingsStore,
+  PartOptimizationStore,
   StockLengthPool,
   StockLengths,
 } from "@/model/optimization";
@@ -27,10 +29,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  PartOptimizationSettingsStore,
-  PartOptimizationStore,
-} from "@/components/optimization/OptimizerForm";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import {
   Select,
@@ -95,6 +93,7 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
   );
 
   const [optType, setOptType] = React.useState<string>("calculate_sizes");
+  const [canDoVarious, setCanDoVarious] = React.useState<boolean>(false);
   const [maxNumSizes, setMaxNumSizes] = React.useState<number>(1);
   const [sizeRange, setSizeRange] = React.useState<number[]>([180, 300]);
   const [stockLengths, setStockLengths] = React.useState<StockLengths[]>([]);
@@ -111,20 +110,29 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
             if (partOptSettings === undefined) return settings;
             if (settings === undefined) return partOptSettings;
             if (Object.is(settings, partOptSettings)) return settings;
-            return defaultSettings;
+            return "various";
           },
-          undefined as PartOptimizationSettings | undefined,
+          undefined as StockLengthPool | undefined | "various",
         ) ?? defaultSettings;
 
-    if (initialSettings.type !== optType) setOptType(initialSettings.type);
+    if (initialSettings === "various" && optType !== "various")
+      setOptType("various");
+
+    if (initialSettings !== "various" && initialSettings.type !== optType)
+      setOptType(initialSettings.type);
+
+    if (canDoVarious !== (initialSettings === "various"))
+      setCanDoVarious(initialSettings === "various");
 
     if (
+      initialSettings !== "various" &&
       initialSettings.type === "calculate_sizes" &&
       initialSettings.maximum_number_of_sizes !== maxNumSizes
     )
       setMaxNumSizes(initialSettings.maximum_number_of_sizes);
 
     if (
+      initialSettings !== "various" &&
       initialSettings.type === "calculate_sizes" &&
       (initialSettings.size_minimum !== sizeRange[0] ||
         initialSettings.size_maximum !== sizeRange[1])
@@ -135,6 +143,7 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
       ]);
 
     if (
+      initialSettings !== "various" &&
       initialSettings.type === "stock_length_pool" &&
       (initialSettings.stock_length_pool.length !== stockLengths.length ||
         initialSettings.stock_length_pool
@@ -166,18 +175,20 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
     if (optMode === undefined) return;
     setDialogOpen(false);
 
-    const partOptSettings: PartOptimizationSettings =
-      optType === "calculate_sizes"
-        ? ({
-            type: "calculate_sizes",
-            maximum_number_of_sizes: maxNumSizes,
-            size_minimum: sizeRange[0],
-            size_maximum: sizeRange[1],
-          } as CalculateStockLengthSettings)
-        : ({
-            type: "stock_length_pool",
-            stock_length_pool: [...stockLengths],
-          } as StockLengthPool);
+    const partOptSettings: PartOptimizationSettings | "various" =
+      optType === "various"
+        ? "various"
+        : optType === "calculate_sizes"
+          ? ({
+              type: "calculate_sizes",
+              maximum_number_of_sizes: maxNumSizes,
+              size_minimum: sizeRange[0],
+              size_maximum: sizeRange[1],
+            } as CalculateStockLengthSettings)
+          : ({
+              type: "stock_length_pool",
+              stock_length_pool: [...stockLengths],
+            } as StockLengthPool);
 
     const partGroupsToOptimize = partGroups.filter(
       (x) => selectedStateStore[x.key] === true,
@@ -200,37 +211,41 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
         let optimizations: PartOptimizationStore = {};
         const optimizer = new Optimizer();
 
-        if (partOptSettings.type === "calculate_sizes") {
-          for (
-            let pgIndex = 0;
-            pgIndex < partGroupsToOptimize.length;
-            pgIndex++
-          ) {
-            const pg = partGroupsToOptimize[pgIndex];
+        for (
+          let pgIndex = 0;
+          pgIndex < partGroupsToOptimize.length;
+          pgIndex++
+        ) {
+          const pg = partGroupsToOptimize[pgIndex];
+          const optSettings =
+            partOptSettings === "various"
+              ? (partOptSettingsStore[pg.part_optimization_groups[0].key] ??
+                defaultSettings)
+              : partOptSettings;
+
+          if (optSettings.type === "calculate_sizes") {
             const bestOpts = await optimizer.FindBestOptimization(
               pg.part_optimization_groups,
               optMode,
-              partOptSettings,
+              optSettings,
             );
             Object.assign(settings, bestOpts.stockLengthPool);
             Object.assign(optimizations, bestOpts.optimizations);
-          }
-        } else {
-          const partOptGroups = partGroupsToOptimize
-            .map((pg) => pg.part_optimization_groups)
-            .flat();
-          settings = partOptGroups.reduce((store, pog) => {
-            store[pog.key] = partOptSettings;
-            return store;
-          }, {} as PartOptimizationSettingsStore);
-          for (let pogIndex = 0; pogIndex < partOptGroups.length; pogIndex++) {
-            const pog = partOptGroups[pogIndex];
-            const optimization = await optimizer.Optimize(
-              pog,
-              optMode,
-              partOptSettings,
-            );
-            optimizations[pog.key] = optimization;
+          } else {
+            for (
+              let pogIndex = 0;
+              pogIndex < pg.part_optimization_groups.length;
+              pogIndex++
+            ) {
+              const pog = pg.part_optimization_groups[pogIndex];
+              const optimization = await optimizer.Optimize(
+                pog,
+                optMode,
+                optSettings,
+              );
+              settings[pog.key] = optSettings;
+              optimizations[pog.key] = optimization;
+            }
           }
         }
 
@@ -269,6 +284,11 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  {canDoVarious && (
+                    <SelectItem value="various">
+                      Use Stock Lengths from Previous Optimizations
+                    </SelectItem>
+                  )}
                   <SelectItem value="calculate_sizes">
                     Calculate Best Stock Length Sizes
                   </SelectItem>
@@ -319,7 +339,7 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
                       <TableRow key={i}>
                         <TableCell className="w-[1%]">
                           <Tooltip>
-                            <TooltipTrigger>
+                            <TooltipTrigger asChild>
                               <Checkbox
                                 checked={s.is_standard_length}
                                 onCheckedChange={(x) => {
@@ -428,7 +448,10 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
                           onClick={() => {
                             const newStockLength: StockLengths = {
                               is_standard_length: false,
-                              length: 280,
+                              length: Math.min(
+                                ...stockLengths.map((x) => x.length),
+                                280,
+                              ),
                               quantity: "unlimited",
                             };
                             const newStockLengths = [

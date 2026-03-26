@@ -11,6 +11,19 @@ export async function insertText(
   } catch (error) {}
 }
 
+export async function writeRange(
+  context: any,
+  sheet: any,
+  address: string,
+  data: any[][],
+) {
+  try {
+    const range = sheet.getRange(address);
+    range.values = data;
+    await context.sync();
+  } catch (error) {}
+}
+
 export function getRangeAndLoadValues(sheet: any, address: string): any {
   let range = sheet.getRange(address);
   range.load("values");
@@ -113,4 +126,27 @@ export async function getTableData(
     columns: headerRange.values,
     data: dataRange.values,
   };
+}
+
+export function createTable(
+  sheet: Excel.Worksheet,
+  address: string,
+  table_name: string,
+  table_header: string[][],
+) {
+  let table = sheet.tables.add(address, true);
+  table.name = table_name;
+  table.getHeaderRowRange().values = table_header;
+
+  return table;
+}
+
+export function addTableData(table: Excel.Table, table_data: any[][]) {
+  table.rows.add(undefined, table_data);
+}
+
+export function autoFitAllColumns(sheet: Excel.Worksheet) {
+  if (Office.context.requirements.isSetSupported("ExcelApi", "1.2")) {
+    sheet.getUsedRange().format.autofitColumns();
+  }
 }

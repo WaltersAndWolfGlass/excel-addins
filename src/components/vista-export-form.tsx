@@ -306,7 +306,7 @@ export function VistaExportForm() {
       setExportFileName(`${data.po_description} (${data.job_number}).tsv`);
       setExportCount(exportCount + 1);
     });
-    toast("Exported! Check your downloads folder.");
+    toast.success("Exported! Check your downloads folder.");
   }
 
   async function constructText(data: z.infer<typeof formSchema>) {
@@ -371,7 +371,7 @@ export function VistaExportForm() {
     let orderForm = new OrderForm();
     orderForm.LoadHeaderFromWorkbook().then((success) => {
       if (!success) {
-        toast("Failed to load data from sheet");
+        toast.error("Failed to load data from sheet");
         return;
       }
 
@@ -392,7 +392,7 @@ export function VistaExportForm() {
           form.resetField("expected_date");
         }
         form.setValue("warranty", orderForm.warranty ?? "");
-        toast(
+        toast.success(
           `Successfully imported sheet data for Metal Order Form (v${orderForm.template_version})`,
         );
         return;
@@ -431,7 +431,7 @@ export function VistaExportForm() {
         } else {
           form.resetField("expected_date");
         }
-        toast(
+        toast.success(
           `Successfully imported first sheet data for ${desc} Form (v${orderForm.template_version})`,
         );
         return;

@@ -20,8 +20,10 @@ export function OptimizationModeSelect({ className }: { className?: string }) {
   const setOptMode = React.useContext(SetOptimizationModeContext);
   return (
     <Select
-      value={optMode}
-      onValueChange={(v) => setOptMode(v as OptimizationMode)}
+      value={optMode ?? ""}
+      onValueChange={(v) =>
+        v === "" ? setOptMode(undefined) : setOptMode(v as OptimizationMode)
+      }
     >
       <SelectTrigger
         className={cn(className)}
@@ -35,8 +37,8 @@ export function OptimizationModeSelect({ className }: { className?: string }) {
             <TooltipTrigger asChild>
               <SelectItem value="estimate">Estimate</SelectItem>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <ul className="max-w-[33vw] list-disc ms-4 text-pretty">
+            <TooltipContent side="right">
+              <ul className="max-w-[15vw] list-disc ms-4 text-pretty">
                 <li>
                   Parts over 10&quot; are rounded up to the nearest{" "}
                   <strong>6&quot;</strong> increment.
@@ -52,8 +54,8 @@ export function OptimizationModeSelect({ className }: { className?: string }) {
             <TooltipTrigger asChild>
               <SelectItem value="takeoff">Takeoff</SelectItem>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <ul className="max-w-[33vw] list-disc ms-4 text-pretty">
+            <TooltipContent side="right">
+              <ul className="max-w-[15vw] list-disc ms-4 text-pretty">
                 <li>
                   Parts over 10&quot; are rounded up to the nearest{" "}
                   <strong>inch</strong>.
@@ -70,8 +72,8 @@ export function OptimizationModeSelect({ className }: { className?: string }) {
             <TooltipTrigger asChild>
               <SelectItem value="fabrication">Fabrication</SelectItem>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <ul className="max-w-[33vw] list-disc ms-4 text-pretty">
+            <TooltipContent side="right">
+              <ul className="max-w-[15vw] list-disc ms-4 text-pretty">
                 <li>
                   <strong>2&quot;</strong> from each end of each stock length is
                   trimmed and not used.

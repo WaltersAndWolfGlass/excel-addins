@@ -166,8 +166,9 @@ function InternalPartSizeChart({
         />
         {stklens.length > 0 &&
           stklens
-            .map((s) => [
+            .map((s, i) => [
               <ReferenceLine
+                key={`main${i}`}
                 y={s.length}
                 label={{
                   value: `${s.length.toString()}"`,
@@ -177,6 +178,7 @@ function InternalPartSizeChart({
               />,
               !s.is_standard_length && (
                 <ReferenceLine
+                  key={`usable${i}`}
                   y={s.length - 2 * optSettings.end_trim}
                   stroke="var(--color-gold)"
                   strokeDasharray="6 3"

@@ -1,11 +1,11 @@
 import * as React from "react";
+import { SelectionStateStore, ExcelState } from "../optimization/OptimizerForm";
 import {
-  SelectionStateStore,
+  OptimizationMode,
+  PartGroup,
   PartOptimizationStore,
   PartOptimizationSettingsStore,
-  ExcelState,
-} from "../optimization/OptimizerForm";
-import { OptimizationMode, PartGroup } from "@/model/optimization";
+} from "@/model/optimization";
 
 export const ExcelStateContext = React.createContext<ExcelState>("unchecked");
 export const SetExcelStateContext = React.createContext<

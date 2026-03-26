@@ -8,11 +8,9 @@ export type CheckedState = boolean | "indeterminate";
 function InternalSelectRowCell({
   partGroup,
   checked,
-  setChecked,
 }: {
   partGroup: PartGroup;
   checked: boolean;
-  setChecked: (s: boolean) => void;
 }) {
   return (
     <TableCell
@@ -22,10 +20,7 @@ function InternalSelectRowCell({
           : 1
       }
     >
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(v: CheckedState) => setChecked(v === true)}
-      />
+      <Checkbox checked={checked} />
     </TableCell>
   );
 }

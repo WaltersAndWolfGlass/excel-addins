@@ -1,17 +1,19 @@
 import { alphaNumCompare } from "@/lib/sorters";
 
-export interface Part {
-  part_number: string;
-  mark_number: string;
-  finish: string;
+interface SortablePart {
+  fab_order: string;
   length: number;
+  mark_number: string;
+}
+export interface Part extends SortablePart {
+  part_number: string;
+  finish: string;
   unit_id: string;
   unit_number: string;
   release: string;
   floor: string;
   optimization_group: string;
   pallet: string;
-  fab_order: string;
   quantity: number;
 }
 
@@ -28,6 +30,13 @@ export interface StockLengths {
   length: number;
   quantity: number | "unlimited";
   is_standard_length: boolean;
+}
+
+export interface StockLengthOptimization extends StockLengths {
+  net_parts: number;
+  gross_length: number;
+  net_part_length: number;
+  yield: number;
 }
 
 export interface CalculateStockLengthSettings {
@@ -55,13 +64,11 @@ export interface Distribution {
   quantity: number;
 }
 
-export interface CutListItem {
+export interface CutListItem extends SortablePart {
   id: number;
   key: string;
   part_number: string;
-  mark_number: string;
   finish: string;
-  length: number;
   quantity: number;
   stock_lengths: StockLengths;
   use_drops_for: number[];
@@ -80,7 +87,7 @@ export interface CutStockLength {
 }
 
 export interface PartOptimization {
-  total_stock_lengths: StockLengths[];
+  total_stock_lengths: StockLengthOptimization[];
   cut_list: CutListItem[];
   cut_stock_lengths: CutStockLength[];
   net_parts: number;
@@ -108,10 +115,29 @@ export interface PartOptimizationGroup {
   part_qty: number;
 }
 
+export type PartOptimizationSettingsStore = Record<
+  string,
+  StockLengthPool | undefined
+>;
+export type PartOptimizationStore = Record<
+  string,
+  PartOptimization | undefined | "optimizing"
+>;
+
+export const calculatePartOptimizationGroupKey = (
+  partNumber: string,
+  finish: string,
+  group: string,
+) => `${group} | ${partNumber} | ${finish}`.toUpperCase();
+
 const getPartGroupKey = (partOptimizationGroup: PartOptimizationGroup) =>
   `${partOptimizationGroup.part_number} | ${partOptimizationGroup.finish}`.toUpperCase();
 const getPartOptimizationGroupKey = (part: Part) =>
-  `${part.optimization_group} | ${part.part_number} | ${part.finish}`.toUpperCase();
+  calculatePartOptimizationGroupKey(
+    part.part_number,
+    part.finish,
+    part.optimization_group,
+  );
 
 const groupBy = <T, K extends keyof any>(arr: T[], key: (i: T) => K) =>
   arr.reduce(
@@ -163,19 +189,17 @@ export function GetPartLengthCalculator(
 export class Optimizer {
   private GetSettingsAndComparer(optimization_mode: OptimizationMode): {
     optSettings: OptimizationSettings;
-    comparer: (a: Part, b: Part) => number;
+    comparer: (a: SortablePart, b: SortablePart) => number;
   } {
     const optSettings = GetOptimizationSettings(optimization_mode);
-    const baseComparer = (a: Part, b: Part) => {
-      if (a.length < b.length) return -1;
-      if (a.length > b.length) return 1;
-      let result = alphaNumCompare(a.unit_id, b.unit_id);
-      if (result !== 0) return result;
+    const baseComparer = (a: SortablePart, b: SortablePart) => {
+      if (a.length > b.length) return -1;
+      if (a.length < b.length) return 1;
       return alphaNumCompare(a.mark_number, b.mark_number);
     };
     let comparer = baseComparer;
     if (optSettings.use_fab_order) {
-      comparer = (a: Part, b: Part) => {
+      comparer = (a: SortablePart, b: SortablePart) => {
         let result = alphaNumCompare(a.fab_order, b.fab_order);
         if (result !== 0) return result;
         return baseComparer(a, b);
@@ -219,6 +243,7 @@ export class Optimizer {
         (store, pog) => {
           const optimization = this.OptimizeSortedParts(
             pog.parts,
+            comparer,
             optSettings,
             stockLengthPool,
           );
@@ -316,19 +341,41 @@ export class Optimizer {
       this.GetSettingsAndComparer(optimization_mode);
     let parts = part_optimization_group.parts.sort(comparer);
 
-    return this.OptimizeSortedParts(parts, optSettings, settings);
+    return this.OptimizeSortedParts(parts, comparer, optSettings, settings);
   }
 
   private OptimizeSortedParts(
     sortedParts: Part[],
+    comparer: (a: SortablePart, b: SortablePart) => number,
     optSettings: OptimizationSettings,
     stklenPool: StockLengthPool,
   ): PartOptimization {
+    let result: PartOptimization = {
+      total_stock_lengths: [],
+      cut_list: [],
+      cut_stock_lengths: [],
+      net_parts: 0,
+      gross_length: 0,
+      net_part_length: 0,
+      yield: 0,
+      successful: false,
+      warning_messages: [],
+      error_messages: [],
+    };
+
     //clone stock length pool
     let stklens: StockLengths[] = [];
     for (let index = 0; index < stklenPool.stock_length_pool.length; index++) {
       const stklen = stklenPool.stock_length_pool[index];
       stklens.push({ ...stklen });
+      result.total_stock_lengths.push({
+        ...stklen,
+        quantity: 0,
+        net_parts: 0,
+        gross_length: 0,
+        net_part_length: 0,
+        yield: 0,
+      });
     }
 
     let cutlistitems: Record<string, CutListItem> = {};
@@ -388,19 +435,6 @@ export class Optimizer {
       };
     }
 
-    let result: PartOptimization = {
-      total_stock_lengths: [],
-      cut_list: [],
-      cut_stock_lengths: [],
-      net_parts: 0,
-      gross_length: 0,
-      net_part_length: 0,
-      yield: 0,
-      successful: false,
-      warning_messages: [],
-      error_messages: [],
-    };
-
     while (parts.length > 0) {
       const part = parts[0];
       if (part.quantity == 0) {
@@ -453,8 +487,14 @@ export class Optimizer {
         );
       });
       if (!resultStkLen) {
-        resultStkLen = { ...stklen };
-        resultStkLen.quantity = 0;
+        resultStkLen = {
+          ...stklen,
+          quantity: 0,
+          net_parts: 0,
+          gross_length: 0,
+          net_part_length: 0,
+          yield: 0,
+        };
         result.total_stock_lengths.push(resultStkLen);
       }
       if (resultStkLen.quantity != "unlimited") {
@@ -470,6 +510,7 @@ export class Optimizer {
         parts: [],
       };
       result.cut_stock_lengths.push(cutStkLen);
+      resultStkLen.gross_length += stklen.length;
       result.gross_length += stklen.length;
 
       var primaryCutlistItem: CutListItem | undefined = undefined;
@@ -477,13 +518,16 @@ export class Optimizer {
         const partIndex = bestLoadedStkLen.part_indexes[i];
         let part = parts[partIndex];
         part.quantity--;
+        resultStkLen.net_parts++;
         result.net_parts++;
+        resultStkLen.net_part_length += part.length;
         result.net_part_length += part.length;
         let singlePart = { ...part, quantity: 1 };
         cutStkLen.parts.push(singlePart);
         cutStkLen.used_length += part.length;
 
-        let cutlistKey = `${part.mark_number} | ${stklen.length}`.toUpperCase();
+        let cutlistKey =
+          `${stklen.length} | ${optSettings.use_fab_order ? part.fab_order : ""} | ${part.mark_number}`.toUpperCase();
         var cutlistitem: CutListItem | undefined = result.cut_list.find(
           (x) => x.key === cutlistKey,
         );
@@ -494,6 +538,7 @@ export class Optimizer {
           cutlistitem = {
             id: 0,
             key: cutlistKey,
+            fab_order: part.fab_order,
             part_number: part.part_number,
             mark_number: part.mark_number,
             finish: part.finish,
@@ -543,10 +588,20 @@ export class Optimizer {
     }
 
     result.yield = result.net_part_length / result.gross_length;
+    for (let index = 0; index < result.total_stock_lengths.length; index++) {
+      const stkLenOpt = result.total_stock_lengths[index];
+      stkLenOpt.yield = stkLenOpt.net_part_length / stkLenOpt.gross_length;
+    }
 
     result.cut_list.sort((a, b) => {
       if (a.stock_lengths.length > b.stock_lengths.length) return -1;
       if (a.stock_lengths.length < b.stock_lengths.length) return 1;
+      return comparer(a, b);
+    });
+
+    result.cut_stock_lengths.sort((a, b) => {
+      if (a.length > b.length) return -1;
+      if (a.length < b.length) return 1;
       return 0;
     });
 
@@ -568,7 +623,7 @@ export class Optimizer {
       if (cutlistitem.use_drops_for_key.length > 0) {
         cutlistitem.use_drops_for = cutlistitem.use_drops_for_key
           .map((key) => cutlistitems[key].id)
-          .sort();
+          .sort((a, b) => a - b);
       }
     }
 

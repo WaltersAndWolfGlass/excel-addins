@@ -1,27 +1,25 @@
-import * as React from "react"
-import type { HeadFC, PageProps } from "gatsby"
-import { Toaster } from "@/components/ui/sonner"
-import { VistaExportForm } from "@/components/vista-export-form"
+import * as React from "react";
+import type { HeadFC, PageProps } from "gatsby";
+import { Toaster } from "@/components/ui/sonner";
+import { VistaExportForm } from "@/components/vista-export-form";
 
 const IndexPage: React.FC<PageProps> = () => {
   return (
     <>
       <main>
-        <Toaster />
+        <Toaster position="top-center" />
         <VistaExportForm />
       </main>
       <footer>
         <div className="text-right">
-          <small className="p-8">
-            v0.3.0.0 2026-02-06
-          </small>
+          <small className="p-8">v0.3.0.1 2026-03-24</small>
         </div>
       </footer>
     </>
-  )
-}
+  );
+};
 
-export default IndexPage
+export default IndexPage;
 
 export const Head: HeadFC = () => (
   <>
@@ -32,4 +30,4 @@ export const Head: HeadFC = () => (
       type="text/javascript"
     />
   </>
-)
+);

@@ -8,14 +8,14 @@ const IndexPage: React.FC<PageProps> = () => {
   return (
     <TooltipProvider>
       <main>
-        <Toaster />
+        <Toaster position="top-center" />
         <div className="m-8">
           <OptimizerForm />
         </div>
       </main>
       <footer>
         <div className="text-right">
-          <small className="p-8">v0.0.1.4 2026-03-12</small>
+          <small className="p-8">v0.0.1.5 2026-03-26</small>
         </div>
       </footer>
     </TooltipProvider>

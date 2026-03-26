@@ -33,12 +33,69 @@ function InternalExtrusionTable() {
     SetSelectionStateStoreContext,
   );
 
+  const [shiftSelectState, setShiftSelectState] = React.useState<
+    { pivot: string; store: SelectionStateStore } | undefined
+  >(undefined);
+
   const selectedCount = partGroups.filter(
     (pg) => selectionStateStore[pg.key] ?? false,
   ).length;
   let selectHeaderState: CheckedState = "indeterminate";
   if (selectedCount == partGroups.length) selectHeaderState = true;
   if (selectedCount == 0) selectHeaderState = false;
+
+  const pgKeyOrder = React.useMemo(
+    () => partGroups.map((pg) => pg.key),
+    [partGroups],
+  );
+
+  const selectionHandler = (
+    selectedKey: string,
+    ctrlActive: boolean,
+    shiftActive: boolean,
+  ) => {
+    const currentState = selectionStateStore[selectedKey] ?? false;
+
+    if (!ctrlActive && (!shiftActive || shiftSelectState === undefined)) {
+      const newStore = { [selectedKey]: true };
+      setSelectionStateStore(newStore);
+      setShiftSelectState({ pivot: selectedKey, store: newStore });
+      return;
+    }
+
+    if (!shiftActive || shiftSelectState === undefined) {
+      const newStore = { ...selectionStateStore, [selectedKey]: !currentState };
+      setSelectionStateStore(newStore);
+      setShiftSelectState({ pivot: selectedKey, store: newStore });
+      return;
+    }
+
+    const desiredRangeState = shiftSelectState.store[shiftSelectState.pivot];
+    const pivotIndex = pgKeyOrder.findIndex(
+      (x) => x === shiftSelectState.pivot,
+    );
+    const selectedIndex = pgKeyOrder.findIndex((x) => x === selectedKey);
+
+    if (pivotIndex < 0 || selectedIndex < 0) {
+      return;
+    }
+
+    const keys =
+      pivotIndex <= selectedIndex
+        ? pgKeyOrder.slice(pivotIndex, selectedIndex + 1)
+        : pgKeyOrder.slice(selectedIndex, pivotIndex + 1);
+    const stateChanges = keys.reduce((result, key) => {
+      result[key] = desiredRangeState;
+      return result;
+    }, {} as SelectionStateStore);
+
+    if (!ctrlActive) {
+      setSelectionStateStore(stateChanges);
+      return;
+    }
+
+    setSelectionStateStore({ ...shiftSelectState.store, ...stateChanges });
+  };
 
   function changeSelectionHeader(state: CheckedState) {
     if (state === true) {
@@ -47,10 +104,13 @@ function InternalExtrusionTable() {
         return state;
       }, {} as SelectionStateStore);
       setSelectionStateStore(selectionState);
+      setShiftSelectState(undefined);
       return;
     }
+
     if (state === false) {
       setSelectionStateStore({} as SelectionStateStore);
+      setShiftSelectState(undefined);
     }
   }
 
@@ -74,18 +134,17 @@ function InternalExtrusionTable() {
       </TableHeader>
       <TableBody>
         {partGroups.map((pg) => {
-          const setChecked = (x: boolean) =>
-            setSelectionStateStore({ ...selectionStateStore, [pg.key]: x });
           const checked = selectionStateStore[pg.key] === true;
-          const toggleChecked = () => setChecked(!checked);
+          const clickHandler: React.MouseEventHandler<HTMLTableRowElement> = (
+            e,
+          ) => selectionHandler(pg.key, e.ctrlKey, e.shiftKey);
           const rows = pg.part_optimization_groups.map((pog, pogIndex) => (
-            <TableRow key={getPartOptGroupRowKey(pog)} onClick={toggleChecked}>
+            <TableRow key={getPartOptGroupRowKey(pog)} onClick={clickHandler}>
               {pogIndex === 0 && (
                 <SelectRowCell
                   key={getSelectCellKey(pg)}
                   partGroup={pg}
                   checked={checked}
-                  setChecked={setChecked}
                 />
               )}
               <PartOptimizationGroupCells
@@ -99,7 +158,7 @@ function InternalExtrusionTable() {
             rows.push(
               <TableRow
                 key={getPartGroupTotalsRowKey(pg)}
-                onClick={toggleChecked}
+                onClick={clickHandler}
               >
                 <PartOptimizationGroupCells
                   key={getPartGroupTotalsCellsKey(pg)}

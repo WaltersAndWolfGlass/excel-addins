@@ -2,8 +2,8 @@ import * as React from "react";
 import {
   OptimizationMode,
   PartGroup,
-  PartOptimization,
-  PartOptimizationSettings,
+  PartOptimizationStore,
+  PartOptimizationSettingsStore,
   StockLengths,
 } from "@/model/optimization";
 import { toast } from "sonner";
@@ -11,22 +11,13 @@ import { OptimizationContext } from "@/components/contexts/OptimizationContext";
 import { OptimizeActionButton } from "./OptimizeActionButton";
 import { ImportPartsButton } from "./ImportPartsButton";
 import { ExtrusionTable } from "./extrusion-table/ExtrusionTable";
-import { Button } from "../ui/button";
-import { DownloadIcon } from "lucide-react";
+import { ExportOptimizationButton } from "./ExportOptimizationButton";
 
 export function getOptKey(partOptGroupKey: string, stklen: StockLengths) {
   return `${partOptGroupKey} | stklen: ${stklen.length}${stklen.is_standard_length ? " std" : ""}`;
 }
 
 export type SelectionStateStore = Record<string, boolean | undefined>;
-export type PartOptimizationSettingsStore = Record<
-  string,
-  PartOptimizationSettings | undefined
->;
-export type PartOptimizationStore = Record<
-  string,
-  PartOptimization | undefined | "optimizing"
->;
 export type ExcelState = "ready" | "unchecked" | "failure";
 
 export function OptimizerForm() {
@@ -47,7 +38,9 @@ export function OptimizerForm() {
       const { host } = await Office.onReady();
       if (host !== Office.HostType.Excel) {
         setExcelState("failure");
-        toast("Not running in Excel. Can't import or export optimizations.");
+        toast.warning(
+          "Not running in Excel. Can't import or export optimizations.",
+        );
         return;
       }
       setExcelState("ready");
@@ -80,9 +73,7 @@ export function OptimizerForm() {
           <OptimizeActionButton className="shadow-md min-w-40" />
         </div>
         <div className="bg-background">
-          <Button className="shadow-md" variant="outline">
-            <DownloadIcon />
-          </Button>
+          <ExportOptimizationButton className="shadow-md" />
         </div>
       </div>
       <ExtrusionTable />

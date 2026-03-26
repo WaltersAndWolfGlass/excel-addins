@@ -4,6 +4,7 @@ import {
   ExcelStateContext,
   PartGroupsContext,
   SetPartGroupsContext,
+  SetPartOptimizationSettingsStoreContext,
   SetPartOptimizationStoreContext,
   SetSelectionStateStoreContext,
 } from "@/components/contexts/OptimizationContext";
@@ -21,6 +22,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import ExcelOptimizationExporter from "@/model/excel_optimization_exporter";
 
 function InternalImportPartsButton({ className }: { className?: string }) {
   const [readingParts, setReadingParts] = React.useState(false);
@@ -29,6 +31,9 @@ function InternalImportPartsButton({ className }: { className?: string }) {
   const setPartGroups = React.useContext(SetPartGroupsContext);
   const setSelectionStateStore = React.useContext(
     SetSelectionStateStoreContext,
+  );
+  const setPartOptSettingsStore = React.useContext(
+    SetPartOptimizationSettingsStoreContext,
   );
   const setOptimizations = React.useContext(SetPartOptimizationStoreContext);
   const [_, startImportingParts] = React.useTransition();
@@ -44,12 +49,16 @@ function InternalImportPartsButton({ className }: { className?: string }) {
         const optimizer = new Optimizer();
         const groups = await optimizer.GroupParts(parts);
 
+        const exporter = new ExcelOptimizationExporter();
+        const store = await exporter.importPartOptSettingsFromAnotherRun();
+
         startImportingParts(() => {
           setPartGroups(groups);
+          setPartOptSettingsStore(store);
           setOptimizations({});
         });
       } catch (error) {
-        toast("Import Parts failed. Check the console log for details.");
+        toast.error("Import Parts failed. Check the console log for details.");
         console.error(error);
       }
       startImportingParts(() => {
