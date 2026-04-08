@@ -58,6 +58,7 @@
     "@types/office-js": "^1.0.565",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "http-proxy-middleware": "^3.0.5",
     "office-addin-manifest": "^2.1.2",
     "typescript": "^5.3.3"
   }

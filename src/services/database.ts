@@ -29,7 +29,7 @@ export type Division = {
 };
 
 export async function getDivisions(
-  companyId: number | string | undefined
+  companyId: number | string | undefined,
 ): Promise<Division[]> {
   switch (companyId?.toString()) {
     case "1":
@@ -91,13 +91,16 @@ export async function getDivisions(
   }
 }
 
-const apiBase = "https://wwweb/portal/desktopModules/ww_Global/API/Nebula";
+const apiBase =
+  process.env.NODE_ENV === "development"
+    ? "/portalapi"
+    : "https://wwweb/portal/desktopModules/ww_Global/API/Nebula";
 
 export async function getVendors(
-  companyId: number | string
+  companyId: number | string,
 ): Promise<Vendor[]> {
   let response = await fetch(
-    `${apiBase}/GetVendorsByCompany?companyId=${companyId}`
+    `${apiBase}/GetVendorsByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch Vendors failed.");
   let vendors: Vendor[] = await response.json();
@@ -106,7 +109,7 @@ export async function getVendors(
 
 export async function getJobs(companyId: number | string): Promise<Job[]> {
   let response = await fetch(
-    `${apiBase}/GetJobsByCompany?companyId=${companyId}`
+    `${apiBase}/GetJobsByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch Jobs failed.");
   let jobs: Job[] = await response.json();
@@ -118,7 +121,7 @@ export async function getJobs(companyId: number | string): Promise<Job[]> {
 
 export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
   let response = await fetch(
-    `${apiBase}/GetPhasesByJobNumber?jobNumber=${job_number}`
+    `${apiBase}/GetPhasesByJobNumber?jobNumber=${job_number}`,
   );
   if (!response.ok) throw new Error("Fetch Phases failed.");
   let phases: PhaseCode[] = await response.json();
@@ -129,20 +132,22 @@ export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
 }
 
 export async function getTaxCodes(
-  companyId: number | string
+  companyId: number | string,
 ): Promise<TaxCode[]> {
+  console.log(process.env.NODE_ENV);
+  console.log(apiBase);
   let response = await fetch(
-    `${apiBase}/GetTaxCodesByCompany?companyId=${companyId}`
+    `${apiBase}/GetTaxCodesByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch Tax Codes failed.");
   return await response.json();
 }
 
 export async function getShipLocs(
-  companyId: number | string
+  companyId: number | string,
 ): Promise<ShipLoc[]> {
   let response = await fetch(
-    `${apiBase}/GetShipLocsByCompany?companyId=${companyId}`
+    `${apiBase}/GetShipLocsByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch ShipLocs failed.");
   return await response.json();
