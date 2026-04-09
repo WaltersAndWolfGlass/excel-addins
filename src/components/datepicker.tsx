@@ -1,18 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ChevronDownIcon } from "lucide-react"
+import * as React from "react";
+import { ChevronDownIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
-export function DatePicker({ date, onChange, ...props }: React.ComponentProps<"button"> & { date: Date | undefined, onChange: (value: any) => void }) {
-  const [open, setOpen] = React.useState(false)
+export function DatePicker({
+  date,
+  onChange,
+  ...props
+}: React.ComponentProps<"button"> & {
+  date: Date | undefined;
+  onChange: (value: any) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -21,11 +28,13 @@ export function DatePicker({ date, onChange, ...props }: React.ComponentProps<"b
           <Button
             type="button"
             variant="outline"
-            className={`w-full justify-between font-normal ${date ? '' : 'text-muted-foreground'}`}
+            className={`w-full justify-between font-normal ${date ? "" : "text-muted-foreground"}`}
             {...props}
           >
-            {date ? date.toLocaleDateString() : "Select date"}
-            <ChevronDownIcon />
+            <div className="overflow-clip min-w-0">
+              {date ? date.toLocaleDateString() : "Select date"}
+            </div>
+            <ChevronDownIcon className="size-4 opacity-50" />
           </Button>
         </div>
       </PopoverTrigger>
@@ -35,11 +44,11 @@ export function DatePicker({ date, onChange, ...props }: React.ComponentProps<"b
           selected={date}
           captionLayout="dropdown"
           onSelect={(date) => {
-            onChange(date)
-            setOpen(false)
+            onChange(date);
+            setOpen(false);
           }}
         />
       </PopoverContent>
     </Popover>
-  )
+  );
 }

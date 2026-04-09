@@ -104,6 +104,9 @@ export async function getVendors(
   );
   if (!response.ok) throw new Error("Fetch Vendors failed.");
   let vendors: Vendor[] = await response.json();
+  for (let vendor of vendors) {
+    vendor.Name = vendor.Name?.trim();
+  }
   return vendors;
 }
 
@@ -115,6 +118,7 @@ export async function getJobs(companyId: number | string): Promise<Job[]> {
   let jobs: Job[] = await response.json();
   for (let job of jobs) {
     job.JobNumber = job.JobNumber.trim().replace(/-$/, "");
+    job.JobName = job.JobName?.trim();
   }
   return jobs;
 }
@@ -127,6 +131,7 @@ export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
   let phases: PhaseCode[] = await response.json();
   for (let phase of phases) {
     phase.Code = phase.Code.trim().replace(/-$/, "");
+    phase.Description = phase.Description?.trim();
   }
   return phases;
 }
@@ -134,13 +139,15 @@ export async function getPhaseCodes(job_number: string): Promise<PhaseCode[]> {
 export async function getTaxCodes(
   companyId: number | string,
 ): Promise<TaxCode[]> {
-  console.log(process.env.NODE_ENV);
-  console.log(apiBase);
   let response = await fetch(
     `${apiBase}/GetTaxCodesByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch Tax Codes failed.");
-  return await response.json();
+  let taxcodes: TaxCode[] = await response.json();
+  for (let taxcode of taxcodes) {
+    taxcode.Description = taxcode.Description?.trim();
+  }
+  return taxcodes;
 }
 
 export async function getShipLocs(
@@ -150,5 +157,16 @@ export async function getShipLocs(
     `${apiBase}/GetShipLocsByCompany?companyId=${companyId}`,
   );
   if (!response.ok) throw new Error("Fetch ShipLocs failed.");
-  return await response.json();
+  let shiplocs: ShipLoc[] = await response.json();
+  for (let shiploc of shiplocs) {
+    shiploc.Code = shiploc.Code.trim();
+    shiploc.Description = shiploc.Description?.trim();
+    shiploc.Address = shiploc.Address?.trim();
+    shiploc.Address2 = shiploc.Address2?.trim();
+    shiploc.City = shiploc.City?.trim();
+    shiploc.State = shiploc.State?.trim();
+    shiploc.Zip = shiploc.Zip?.trim();
+    shiploc.Country = shiploc.Country?.trim();
+  }
+  return shiplocs;
 }

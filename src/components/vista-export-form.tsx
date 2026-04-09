@@ -86,6 +86,8 @@ const formSchema = z.object({
   tax_code: reqString,
 });
 
+export type ExcelState = "ready" | "unchecked" | "failure";
+
 export function VistaExportForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -116,7 +118,7 @@ export function VistaExportForm() {
     },
   });
   form.trigger();
-  const [officeReady, setOfficeReady] = React.useState(false);
+  const [excelState, setExcelState] = React.useState<ExcelState>("unchecked");
   const [exportText, setExportText] = React.useState("");
   const [exportFileName, setExportFileName] = React.useState("example.tsv");
   const [exportCount, setExportCount] = React.useState(0);
@@ -137,12 +139,23 @@ export function VistaExportForm() {
   );
 
   React.useEffect(() => {
-    try {
-      Office.onReady().then(() => setOfficeReady(true));
-    } catch {
-      setOfficeReady(true);
-    }
-  });
+    const checkOffice = async () => {
+      const { host } = await Office.onReady();
+      if (host !== Office.HostType.Excel) {
+        setExcelState("failure");
+        toast.warning(
+          "Not running in Excel. Can't import or export order form items.",
+        );
+        return;
+      }
+      setExcelState("ready");
+      let authContext = await Office.auth.getAuthContext();
+      const email = authContext.userPrincipalName;
+      form.setValue("ordered_by", email);
+    };
+
+    setTimeout(checkOffice, 1000);
+  }, []);
 
   const downloadRef = React.useRef<HTMLAnchorElement>(null);
   React.useEffect(() => {
@@ -178,7 +191,7 @@ export function VistaExportForm() {
               setVendors(
                 vs.map((v) => ({
                   value: v.Id.toString(),
-                  label: v.Name,
+                  label: `[${v.Id}] ${v.Name}`,
                   ...v,
                 })),
               );
@@ -234,7 +247,6 @@ export function VistaExportForm() {
             setTaxCodes([]);
             setShipLocs([]);
           }
-          form.trigger();
           break;
         case "job_number":
           if (data.job_number) {
@@ -255,7 +267,6 @@ export function VistaExportForm() {
             setJobSelected(false);
             setCostCodes([]);
           }
-          form.trigger();
           break;
         case "ship_location":
           if (data.ship_location) {
@@ -283,9 +294,9 @@ export function VistaExportForm() {
             } else {
               form.resetField("ship_zip");
             }
-            form.trigger();
           }
       }
+      form.trigger();
     });
     return () => subscription.unsubscribe();
   }, [form.watch, shipLocs]);
@@ -475,17 +486,13 @@ export function VistaExportForm() {
                   label: x.name,
                 }))}
               />
-              {officeReady ? (
-                <Button
-                  variant="outline"
-                  onClick={readSheetHeader}
-                  disabled={!companySelected}
-                >
-                  Import from Excel
-                </Button>
-              ) : (
-                <Skeleton className="w-full h-9" />
-              )}
+              <Button
+                variant="outline"
+                onClick={readSheetHeader}
+                disabled={excelState !== "ready" || !companySelected}
+              >
+                Import from Excel
+              </Button>
               <FormTextBox
                 name="po_description"
                 control={form.control}
@@ -599,25 +606,21 @@ export function VistaExportForm() {
           </FieldGroup>
         </FieldSet>
       </form>
-      {officeReady ? (
-        <>
-          <Button type="submit" form="export-vista-form">
-            Export
-          </Button>
-          <a
-            ref={downloadRef}
-            href={
-              "data:text/plain;charset=utf-8," + encodeURIComponent(exportText)
-            }
-            download={exportFileName}
-            className="hidden"
-          >
-            Download
-          </a>
-        </>
-      ) : (
-        <Skeleton className="w-full h-9" />
-      )}
+      <Button
+        type="submit"
+        form="export-vista-form"
+        disabled={excelState !== "ready"}
+      >
+        Export
+      </Button>
+      <a
+        ref={downloadRef}
+        href={"data:text/plain;charset=utf-8," + encodeURIComponent(exportText)}
+        download={exportFileName}
+        className="hidden"
+      >
+        Download
+      </a>
     </div>
   );
 }
