@@ -118,6 +118,9 @@ export async function getJobs(companyId: number | string): Promise<Job[]> {
   let jobs: Job[] = await response.json();
   for (let job of jobs) {
     job.JobNumber = job.JobNumber.trim().replace(/-$/, "");
+    if (job.JobNumber.match(/^[179]0-/)) {
+      job.JobNumber = `25${job.JobNumber.substring(0, 1)}${job.JobNumber.substring(3)}`;
+    }
     job.JobName = job.JobName?.trim();
   }
   return jobs;
