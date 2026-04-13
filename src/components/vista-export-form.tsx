@@ -344,7 +344,7 @@ export function VistaExportForm() {
       data.ship_state,
       data.ship_zip,
       data.ship_instructions,
-      formatDate(new Date(today.getFullYear(), today.getMonth())),
+      formatDate(new Date(today.getFullYear(), today.getMonth()), ""),
       "reckey",
     ].join("\t");
 
@@ -363,7 +363,7 @@ export function VistaExportForm() {
         "", // material #
         data.cost_code,
         x.description,
-        formatDate(data.expected_date),
+        formatDate(data.expected_date, ""),
         data.division,
         data.pay_type,
         x.units,
