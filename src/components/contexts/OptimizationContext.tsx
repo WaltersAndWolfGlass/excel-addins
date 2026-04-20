@@ -5,11 +5,18 @@ import {
   PartGroup,
   PartOptimizationStore,
   PartOptimizationSettingsStore,
+  PartGroupLinkedStore,
 } from "@/model/optimization";
 
 export const ExcelStateContext = React.createContext<ExcelState>("unchecked");
 export const SetExcelStateContext = React.createContext<
   (s: ExcelState) => void
+>((_) => {});
+
+export const PartGroupLinkedStoreContext =
+  React.createContext<PartGroupLinkedStore>({});
+export const SetPartGroupLinkedStoreContext = React.createContext<
+  (x: PartGroupLinkedStore) => void
 >((_) => {});
 
 export const PartGroupsContext = React.createContext<PartGroup[]>([]);
@@ -45,6 +52,8 @@ export const SetPartOptimizationSettingsStoreContext = React.createContext<
 function InternalOptimizationContext({
   excelState,
   setExcelState,
+  linkStore,
+  setLinkStore,
   partGroups,
   setPartGroups,
   optMode,
@@ -59,6 +68,8 @@ function InternalOptimizationContext({
 }: {
   excelState: ExcelState;
   setExcelState: (s: ExcelState) => void;
+  linkStore: PartGroupLinkedStore;
+  setLinkStore: (x: PartGroupLinkedStore) => void;
   partGroups: PartGroup[];
   setPartGroups: (p: PartGroup[]) => void;
   optMode: OptimizationMode | undefined;
@@ -74,33 +85,39 @@ function InternalOptimizationContext({
   return (
     <ExcelStateContext value={excelState}>
       <SetExcelStateContext value={setExcelState}>
-        <PartGroupsContext value={partGroups}>
-          <SetPartGroupsContext value={setPartGroups}>
-            <OptimizationModeContext value={optMode}>
-              <SetOptimizationModeContext value={setOptMode}>
-                <SelectionStateStoreContext value={selectionStateStore}>
-                  <SetSelectionStateStoreContext value={setSelectionStateStore}>
-                    <PartOptimizationSettingsStoreContext
-                      value={partOptSettings}
-                    >
-                      <SetPartOptimizationSettingsStoreContext
-                        value={setPartOptSettings}
+        <PartGroupLinkedStoreContext value={linkStore}>
+          <SetPartGroupLinkedStoreContext value={setLinkStore}>
+            <PartGroupsContext value={partGroups}>
+              <SetPartGroupsContext value={setPartGroups}>
+                <OptimizationModeContext value={optMode}>
+                  <SetOptimizationModeContext value={setOptMode}>
+                    <SelectionStateStoreContext value={selectionStateStore}>
+                      <SetSelectionStateStoreContext
+                        value={setSelectionStateStore}
                       >
-                        <PartOptimizationStoreContext value={optimizations}>
-                          <SetPartOptimizationStoreContext
-                            value={setOptimizations}
+                        <PartOptimizationSettingsStoreContext
+                          value={partOptSettings}
+                        >
+                          <SetPartOptimizationSettingsStoreContext
+                            value={setPartOptSettings}
                           >
-                            {children}
-                          </SetPartOptimizationStoreContext>
-                        </PartOptimizationStoreContext>
-                      </SetPartOptimizationSettingsStoreContext>
-                    </PartOptimizationSettingsStoreContext>
-                  </SetSelectionStateStoreContext>
-                </SelectionStateStoreContext>
-              </SetOptimizationModeContext>
-            </OptimizationModeContext>
-          </SetPartGroupsContext>
-        </PartGroupsContext>
+                            <PartOptimizationStoreContext value={optimizations}>
+                              <SetPartOptimizationStoreContext
+                                value={setOptimizations}
+                              >
+                                {children}
+                              </SetPartOptimizationStoreContext>
+                            </PartOptimizationStoreContext>
+                          </SetPartOptimizationSettingsStoreContext>
+                        </PartOptimizationSettingsStoreContext>
+                      </SetSelectionStateStoreContext>
+                    </SelectionStateStoreContext>
+                  </SetOptimizationModeContext>
+                </OptimizationModeContext>
+              </SetPartGroupsContext>
+            </PartGroupsContext>
+          </SetPartGroupLinkedStoreContext>
+        </PartGroupLinkedStoreContext>
       </SetExcelStateContext>
     </ExcelStateContext>
   );

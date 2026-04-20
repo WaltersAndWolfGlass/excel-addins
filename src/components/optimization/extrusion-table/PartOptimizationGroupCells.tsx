@@ -6,13 +6,26 @@ import {
   PartOptimizationGroup,
 } from "@/model/optimization";
 import { TableCell } from "@/components/ui/table";
-import { PartOptimizationStoreContext } from "@/components/contexts/OptimizationContext";
+import {
+  PartGroupLinkedStoreContext,
+  PartOptimizationStoreContext,
+  SelectionStateStoreContext,
+  SetPartGroupLinkedStoreContext,
+  SetSelectionStateStoreContext,
+} from "@/components/contexts/OptimizationContext";
 import { PartQtyGroupCell } from "./PartQtyGroupCell";
 import { OptimizationCell } from "./OptimizationCell";
 import { YieldCell } from "./YieldCell";
 import { PartNumberCell } from "./PartNumberCell";
 import { FinishCell } from "./FinishCell";
 import { PartOptGroupNameCell } from "./PartOptGroupNameCell";
+import { SelectRowCell } from "./SelectRowCell";
+import { PartGroupLinkCell } from "./PartGroupLinkCell";
+
+const getPartSelectCellKey = (partGroup: PartGroup) =>
+  partGroup.key + " | col:Select";
+const getGroupSelectCellKey = (partOptGroup: PartOptimizationGroup) =>
+  partOptGroup.key + " | col:Select";
 
 function InternalPartOptimizationGroupCells({
   partGroup,
@@ -21,11 +34,14 @@ function InternalPartOptimizationGroupCells({
   partGroup: PartGroup;
   pogIndex: number | "totals";
 }) {
+  const linkStore = React.useContext(PartGroupLinkedStoreContext);
+  const setLinkStore = React.useContext(SetPartGroupLinkedStoreContext);
   const partOptStore = React.useContext(PartOptimizationStoreContext);
+  const selectionStateStore = React.useContext(SelectionStateStoreContext);
 
   const singleRowMode = partGroup.part_optimization_groups.length === 1;
-  let groupRowSpan = partGroup.part_optimization_groups.length;
-  if (partGroup.part_optimization_groups.length > 1) groupRowSpan++;
+
+  const linked = linkStore[partGroup.key] === true;
 
   if (pogIndex === "totals") {
     const partOpts = partGroup.part_optimization_groups.map(
@@ -81,10 +97,26 @@ function InternalPartOptimizationGroupCells({
     }
     return (
       <>
+        {!linked && (
+          <>
+            <TableCell />
+            <PartNumberCell
+              key={getPartNumberCellKey(partGroup)}
+              partGroup={partGroup}
+            />
+            <FinishCell
+              key={getFinishCellKey(partGroup)}
+              partGroup={partGroup}
+            />
+            <TableCell />
+          </>
+        )}
         <TableCell
           key={getTotalsPartOptGroupCellKey(partGroup)}
-          className="italic text-foreground/50"
-        ></TableCell>
+          className="font-bold"
+        >
+          Total
+        </TableCell>
         <PartQtyGroupCell
           key={getTotalsPartQtyCellKey(partGroup)}
           qty={partGroup.part_optimization_groups.reduce(
@@ -112,44 +144,83 @@ function InternalPartOptimizationGroupCells({
 
   const pog = partGroup.part_optimization_groups[pogIndex];
 
-  return (
-    <>
-      {pogIndex === 0 && (
-        <PartNumberCell
-          key={getPartNumberCellKey(partGroup)}
-          partGroup={partGroup}
-          rowSpan={groupRowSpan}
-        />
-      )}
-      {pogIndex === 0 && (
-        <FinishCell
-          key={getFinishCellKey(partGroup)}
-          partGroup={partGroup}
-          rowSpan={groupRowSpan}
-        />
-      )}
-      <PartOptGroupNameCell
-        key={getPartOptGroupCellKey(pog)}
-        partOptGroup={pog}
-      />
-      <PartQtyGroupCell
-        key={getPartQtyCellKey(pog)}
-        qty={pog.part_qty}
-        parts={pog.parts}
-        className={singleRowMode ? "font-bold" : ""}
-      />
-      <OptimizationCell
-        key={getOptimizationCellKey(pog)}
-        optimization={partOptStore[pog.key]}
-        className={singleRowMode ? "font-bold" : ""}
-      />
-      <YieldCell
-        key={getYieldCellKey(pog)}
-        optimization={partOptStore[pog.key]}
-        className={singleRowMode ? "font-bold" : ""}
-      />
-    </>
+  const cells: React.JSX.Element[] = [];
+
+  if (!linked) {
+    const checked = selectionStateStore[pog.key] === true;
+    cells.push(
+      <SelectRowCell key={getGroupSelectCellKey(pog)} checked={checked} />,
+    );
+
+    cells.push(
+      <PartNumberCell
+        key={getPartNumberCellKey(partGroup)}
+        partGroup={partGroup}
+      />,
+      <FinishCell key={getFinishCellKey(partGroup)} partGroup={partGroup} />,
+      <PartGroupLinkCell
+        key={getLinkedCellKey(partGroup)}
+        pgKey={partGroup.key}
+      />,
+    );
+  } else if (pogIndex === 0) {
+    const checked = selectionStateStore[partGroup.key] === true;
+    const rowSpan =
+      partGroup.part_optimization_groups.length +
+      (partGroup.part_optimization_groups.length === 1 ? 0 : 1);
+    cells.push(
+      <SelectRowCell
+        key={getPartSelectCellKey(partGroup)}
+        checked={checked}
+        rowSpan={rowSpan}
+      />,
+      <PartNumberCell
+        key={getPartNumberCellKey(partGroup)}
+        partGroup={partGroup}
+        rowSpan={
+          partGroup.part_optimization_groups.length + (singleRowMode ? 0 : 1)
+        }
+      />,
+      <FinishCell
+        key={getFinishCellKey(partGroup)}
+        partGroup={partGroup}
+        rowSpan={
+          partGroup.part_optimization_groups.length + (singleRowMode ? 0 : 1)
+        }
+      />,
+      <PartGroupLinkCell
+        key={getLinkedCellKey(partGroup)}
+        pgKey={partGroup.key}
+        rowSpan={rowSpan}
+      />,
+    );
+  }
+
+  cells.push(
+    <PartOptGroupNameCell
+      key={getPartOptGroupCellKey(pog)}
+      partOptGroup={pog}
+      className={singleRowMode ? "font-bold" : ""}
+    />,
+    <PartQtyGroupCell
+      key={getPartQtyCellKey(pog)}
+      qty={pog.part_qty}
+      parts={pog.parts}
+      className={singleRowMode ? "font-bold" : ""}
+    />,
+    <OptimizationCell
+      key={getOptimizationCellKey(pog)}
+      optimization={partOptStore[pog.key]}
+      className={singleRowMode ? "font-bold" : ""}
+    />,
+    <YieldCell
+      key={getYieldCellKey(pog)}
+      optimization={partOptStore[pog.key]}
+      className={singleRowMode ? "font-bold" : ""}
+    />,
   );
+
+  return cells;
 }
 
 export const PartOptimizationGroupCells = React.memo(
@@ -160,6 +231,8 @@ const getPartNumberCellKey = (partGroup: PartGroup) =>
   partGroup.key + " | col:PartNumber";
 const getFinishCellKey = (partGroup: PartGroup) =>
   partGroup.key + " | col:Finish";
+const getLinkedCellKey = (partGroup: PartGroup) =>
+  partGroup.key + " | col:Linked";
 const getPartOptGroupCellKey = (partOptGroup: PartOptimizationGroup) =>
   partOptGroup.key + " | col:PartOptGroup";
 const getPartQtyCellKey = (partOptGroup: PartOptimizationGroup) =>

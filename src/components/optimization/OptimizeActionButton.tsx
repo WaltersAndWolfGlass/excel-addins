@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   OptimizationModeContext,
+  PartGroupLinkedStoreContext,
   PartGroupsContext,
   PartOptimizationSettingsStoreContext,
   PartOptimizationStoreContext,
@@ -12,8 +13,8 @@ import {
 import {
   CalculateStockLengthSettings,
   Optimizer,
+  PartOptimization,
   PartOptimizationSettings,
-  PartOptimizationSettingsStore,
   PartOptimizationStore,
   StockLengthPool,
   StockLengths,
@@ -29,7 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
 
   const optMode = React.useContext(OptimizationModeContext);
 
+  const linkStore = React.useContext(PartGroupLinkedStoreContext);
   const selectedStateStore = React.useContext(SelectionStateStoreContext);
   const selectedCount = Object.values(selectedStateStore).filter(
     (x) => x,
@@ -98,12 +100,24 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
   const [sizeRange, setSizeRange] = React.useState<number[]>([180, 300]);
   const [stockLengths, setStockLengths] = React.useState<StockLengths[]>([]);
 
+  const [selectedPartGroups, selectedPartOptGroups] = React.useMemo(
+    () => [
+      partGroups
+        .filter((pg) => linkStore[pg.key] === true)
+        .filter((pg) => selectedStateStore[pg.key] === true),
+      partGroups
+        .filter((pg) => linkStore[pg.key] !== true)
+        .flatMap((pg) => pg.part_optimization_groups)
+        .filter((pog) => selectedStateStore[pog.key] === true),
+    ],
+    [partGroups, selectedStateStore, linkStore],
+  );
+
   const setInitialSettings = React.useMemo(() => {
     const initialSettings =
-      partGroups
-        .filter((pg) => selectedStateStore[pg.key] === true)
-        .map((pg) => pg.part_optimization_groups)
-        .flat()
+      selectedPartGroups
+        .flatMap((pg) => pg.part_optimization_groups)
+        .concat(selectedPartOptGroups)
         .reduce(
           (settings, pog) => {
             const partOptSettings = partOptSettingsStore[pog.key];
@@ -159,14 +173,12 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
     )
       setStockLengths(initialSettings.stock_length_pool);
     return true;
-  }, [partGroups, selectedStateStore, partOptSettingsStore]);
+  }, [selectedPartGroups, selectedPartOptGroups, partOptSettingsStore]);
 
-  const partsForChart = partGroups
-    .filter((pg) => selectedStateStore[pg.key] === true)
-    .map((pg) => pg.part_optimization_groups)
-    .flat()
-    .map((pog) => pog.parts)
-    .flat();
+  const partsForChart = selectedPartGroups
+    .flatMap((pg) => pg.part_optimization_groups)
+    .concat(selectedPartOptGroups)
+    .flatMap((pog) => pog.parts);
 
   const partOptStore = React.useContext(PartOptimizationStoreContext);
   const setPartOptStore = React.useContext(SetPartOptimizationStoreContext);
@@ -190,12 +202,12 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
               stock_length_pool: [...stockLengths],
             } as StockLengthPool);
 
-    const partGroupsToOptimize = partGroups.filter(
-      (x) => selectedStateStore[x.key] === true,
-    );
+    const partGroupsToOptimize = selectedPartGroups;
+    const partOptGroupsToOptimize = selectedPartOptGroups;
+
     const optimizingStoreState = partGroupsToOptimize
-      .map((pg) => pg.part_optimization_groups)
-      .flat()
+      .flatMap((pg) => pg.part_optimization_groups)
+      .concat(partOptGroupsToOptimize)
       .map((pog) => pog.key)
       .reduce((store, pogKey) => {
         store[pogKey] = "optimizing";
@@ -207,9 +219,9 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
 
     setTimeout(() => {
       startOptimization(async () => {
-        let settings: PartOptimizationSettingsStore = {};
-        let optimizations: PartOptimizationStore = {};
         const optimizer = new Optimizer();
+        const optimizations: Record<string, PartOptimization> = {};
+        const settings: Record<string, StockLengthPool> = {};
 
         for (
           let pgIndex = 0;
@@ -217,34 +229,163 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
           pgIndex++
         ) {
           const pg = partGroupsToOptimize[pgIndex];
-          const optSettings =
-            partOptSettings === "various"
-              ? (partOptSettingsStore[pg.part_optimization_groups[0].key] ??
-                defaultSettings)
-              : partOptSettings;
+          const pogs = pg.part_optimization_groups;
 
-          if (optSettings.type === "calculate_sizes") {
-            const bestOpts = await optimizer.FindBestOptimization(
-              pg.part_optimization_groups,
+          if (
+            partOptSettings !== "various" &&
+            partOptSettings.type === "calculate_sizes"
+          ) {
+            const opts = await optimizer.FindBestOptimization(
+              pogs,
               optMode,
-              optSettings,
+              partOptSettings,
             );
-            Object.assign(settings, bestOpts.stockLengthPool);
-            Object.assign(optimizations, bestOpts.optimizations);
+            const totalPool = optimizer.GetTotalPoolFromOptimizations(
+              Object.values(opts),
+            );
+            totalPool.stock_length_pool.forEach(
+              (x) => (x.quantity = "unlimited"),
+            );
+
+            Object.entries(opts).forEach(([key, value]) => {
+              optimizations[key] = value;
+              settings[key] = totalPool;
+            });
+          } else if (
+            partOptSettings !== "various" &&
+            partOptSettings.type === "stock_length_pool"
+          ) {
+            const opts = await optimizer.Optimize(
+              pogs,
+              optMode,
+              partOptSettings,
+            );
+            Object.entries(opts).forEach(([key, value]) => {
+              optimizations[key] = value;
+              settings[key] = partOptSettings;
+            });
           } else {
-            for (
-              let pogIndex = 0;
-              pogIndex < pg.part_optimization_groups.length;
-              pogIndex++
-            ) {
-              const pog = pg.part_optimization_groups[pogIndex];
-              const optimization = await optimizer.Optimize(
-                pog,
-                optMode,
-                optSettings,
-              );
-              settings[pog.key] = optSettings;
-              optimizations[pog.key] = optimization;
+            const pogSettings = pogs.map(
+              (pog) => partOptSettingsStore[pog.key],
+            );
+            if (pogSettings.every((s) => s !== undefined)) {
+              const pogSetting = pogSettings[0];
+              if (
+                pogSetting !== undefined &&
+                pogSettings.every((s) => Object.is(s, pogSetting))
+              ) {
+                const opts = await optimizer.Optimize(
+                  pogs,
+                  optMode,
+                  pogSetting,
+                );
+                Object.entries(opts).forEach(([key, value]) => {
+                  optimizations[key] = value;
+                });
+                continue;
+              }
+            }
+
+            const pogsWithoutSettings = pogs.filter(
+              (pog) => partOptSettingsStore[pog.key] === undefined,
+            );
+            if (pogsWithoutSettings.length > 0) {
+              const optFailure = {
+                total_stock_lengths: [],
+                cut_list: [],
+                cut_stock_lengths: [],
+                net_parts: 0,
+                gross_length: 0,
+                net_part_length: 0,
+                yield: 0,
+                successful: false,
+                warning_messages: [],
+                error_messages: [
+                  "No stock lengths assigned from a previous optimization.  Please re-optimize this part specifying new stock length sizes or unlink the Releases so they are free to use different stock lengths.",
+                ],
+              } as PartOptimization;
+              pogsWithoutSettings.forEach((pog) => {
+                optimizations[pog.key] = optFailure;
+              });
+            }
+
+            const pogsWithSettings = pogs.filter(
+              (pog) => partOptSettingsStore[pog.key] !== undefined,
+            );
+            if (pogsWithSettings.length > 0) {
+              for (
+                let pogIndex = 0;
+                pogIndex < pogsWithSettings.length;
+                pogIndex++
+              ) {
+                const pog = pogsWithSettings[pogIndex];
+                const pogSetting = partOptSettingsStore[pog.key];
+                if (pogSetting === undefined) continue;
+                const opt = await optimizer.Optimize(
+                  [pog],
+                  optMode,
+                  pogSetting,
+                );
+                optimizations[pog.key] = opt[pog.key];
+              }
+            }
+          }
+        }
+
+        for (
+          let pogIndex = 0;
+          pogIndex < partOptGroupsToOptimize.length;
+          pogIndex++
+        ) {
+          const pog = partOptGroupsToOptimize[pogIndex];
+
+          if (
+            partOptSettings !== "various" &&
+            partOptSettings.type === "calculate_sizes"
+          ) {
+            const opt = await optimizer.FindBestOptimization(
+              [pog],
+              optMode,
+              partOptSettings,
+            );
+            const pool = optimizer.GetTotalPoolFromOptimizations(
+              Object.values(opt),
+            );
+            pool.stock_length_pool.forEach((x) => (x.quantity = "unlimited"));
+            optimizations[pog.key] = opt[pog.key];
+            settings[pog.key] = pool;
+          } else if (
+            partOptSettings !== "various" &&
+            partOptSettings.type === "stock_length_pool"
+          ) {
+            const opt = await optimizer.Optimize(
+              [pog],
+              optMode,
+              partOptSettings,
+            );
+            optimizations[pog.key] = opt[pog.key];
+            settings[pog.key] = partOptSettings;
+          } else {
+            const pogSetting = partOptSettingsStore[pog.key];
+            if (pogSetting === undefined) {
+              const optFailure = {
+                total_stock_lengths: [],
+                cut_list: [],
+                cut_stock_lengths: [],
+                net_parts: 0,
+                gross_length: 0,
+                net_part_length: 0,
+                yield: 0,
+                successful: false,
+                warning_messages: [],
+                error_messages: [
+                  "No stock lengths assigned from a previous optimization.  Please re-optimize this Release/Level.",
+                ],
+              } as PartOptimization;
+              optimizations[pog.key] = optFailure;
+            } else {
+              const opt = await optimizer.Optimize([pog], optMode, pogSetting);
+              optimizations[pog.key] = opt[pog.key];
             }
           }
         }
@@ -261,7 +402,7 @@ function InternalOptimizeActionButton({ className }: { className?: string }) {
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button className={cn(className)} disabled={selectedCount === 0}>
-          Optimize {selectedCount} Part{selectedCount === 1 ? "" : "s"}
+          Optimize {selectedCount} Selection{selectedCount === 1 ? "" : "s"}
         </Button>
       </DialogTrigger>
       <DialogContent>

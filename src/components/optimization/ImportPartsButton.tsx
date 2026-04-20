@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   ExcelStateContext,
   PartGroupsContext,
+  SetPartGroupLinkedStoreContext,
   SetPartGroupsContext,
   SetPartOptimizationSettingsStoreContext,
   SetPartOptimizationStoreContext,
@@ -35,6 +36,7 @@ function InternalImportPartsButton({ className }: { className?: string }) {
   const setPartOptSettingsStore = React.useContext(
     SetPartOptimizationSettingsStoreContext,
   );
+  const setLinkedStore = React.useContext(SetPartGroupLinkedStoreContext);
   const setOptimizations = React.useContext(SetPartOptimizationStoreContext);
   const [_, startImportingParts] = React.useTransition();
 
@@ -50,11 +52,13 @@ function InternalImportPartsButton({ className }: { className?: string }) {
         const groups = await optimizer.GroupParts(parts);
 
         const exporter = new ExcelOptimizationExporter();
-        const store = await exporter.importPartOptSettingsFromAnotherRun();
+        const importStores =
+          await exporter.importPartOptSettingsFromAnotherRun();
 
         startImportingParts(() => {
           setPartGroups(groups);
-          setPartOptSettingsStore(store);
+          setPartOptSettingsStore(importStores.settingsStore);
+          setLinkedStore(importStores.linkStore);
           setOptimizations({});
         });
       } catch (error) {

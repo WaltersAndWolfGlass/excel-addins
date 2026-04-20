@@ -124,14 +124,21 @@ export type PartOptimizationStore = Record<
   PartOptimization | undefined | "optimizing"
 >;
 
+export type PartGroupLinkedStore = Record<string, boolean | undefined>;
+
 export const calculatePartOptimizationGroupKey = (
   partNumber: string,
   finish: string,
   group: string,
 ) => `${group} | ${partNumber} | ${finish}`.toUpperCase();
+export const calculatePartGroupKey = (partNumber: string, finish: string) =>
+  `${partNumber} | ${finish}`.toUpperCase();
 
 const getPartGroupKey = (partOptimizationGroup: PartOptimizationGroup) =>
-  `${partOptimizationGroup.part_number} | ${partOptimizationGroup.finish}`.toUpperCase();
+  calculatePartGroupKey(
+    partOptimizationGroup.part_number,
+    partOptimizationGroup.finish,
+  );
 const getPartOptimizationGroupKey = (part: Part) =>
   calculatePartOptimizationGroupKey(
     part.part_number,
@@ -213,10 +220,7 @@ export class Optimizer {
     part_optimization_groups: PartOptimizationGroup[],
     optimization_mode: OptimizationMode,
     settings: CalculateStockLengthSettings,
-  ): Promise<{
-    stockLengthPool: Record<string, StockLengthPool | undefined>;
-    optimizations: Record<string, PartOptimization>;
-  }> {
+  ): Promise<Record<string, PartOptimization>> {
     const { optSettings, comparer } =
       this.GetSettingsAndComparer(optimization_mode);
 
@@ -307,41 +311,81 @@ export class Optimizer {
         },
         {} as Record<string, PartOptimization>,
       );
-      const pool = part_optimization_groups.reduce(
-        (s, pog) => {
-          s[pog.key] = undefined;
-          return s;
-        },
-        {} as Record<string, StockLengthPool | undefined>,
-      );
-      return { stockLengthPool: pool, optimizations: opts };
+      return opts;
     }
 
     const bestOpt = sortedOptCollection[0];
-    const bestPool = part_optimization_groups.reduce(
-      (s, pog) => {
-        s[pog.key] = bestOpt.stockLengthPool;
-        return s;
-      },
-      {} as Record<string, StockLengthPool | undefined>,
-    );
-
-    return {
-      stockLengthPool: bestPool,
-      optimizations: bestOpt.optimizations,
-    };
+    return bestOpt.optimizations;
   }
 
   async Optimize(
-    part_optimization_group: PartOptimizationGroup,
+    part_optimization_groups: PartOptimizationGroup[],
     optimization_mode: OptimizationMode,
     settings: StockLengthPool,
-  ): Promise<PartOptimization> {
+  ): Promise<Record<string, PartOptimization>> {
     const { optSettings, comparer } =
       this.GetSettingsAndComparer(optimization_mode);
-    let parts = part_optimization_group.parts.sort(comparer);
 
-    return this.OptimizeSortedParts(parts, comparer, optSettings, settings);
+    const workingPool: StockLengthPool = {
+      type: "stock_length_pool",
+      stock_length_pool: settings.stock_length_pool.map((x) => ({ ...x })),
+    };
+
+    const optimizations: Record<string, PartOptimization> = {};
+
+    for (
+      let pogIndex = 0;
+      pogIndex < part_optimization_groups.length;
+      pogIndex++
+    ) {
+      const pog = part_optimization_groups[pogIndex];
+      const parts = pog.parts.sort(comparer);
+      const optimization = this.OptimizeSortedParts(
+        parts,
+        comparer,
+        optSettings,
+        workingPool,
+      );
+      optimizations[pog.key] = optimization;
+
+      // remove stock lengths from workingPool for next opt group
+      for (
+        let usedStkLenIndex = 0;
+        usedStkLenIndex < optimization.total_stock_lengths.length;
+        usedStkLenIndex++
+      ) {
+        const usedStkLen = optimization.total_stock_lengths[usedStkLenIndex];
+        var usedStkLenQty =
+          usedStkLen.quantity === "unlimited" ? 0 : usedStkLen.quantity;
+        const sourceStkLens = workingPool.stock_length_pool.filter(
+          (x) =>
+            x.length === usedStkLen.length &&
+            x.is_standard_length === usedStkLen.is_standard_length,
+        );
+        if (sourceStkLens.some((x) => x.quantity === "unlimited")) continue;
+        for (
+          let sourceStkLenIndex = 0;
+          sourceStkLenIndex < sourceStkLens.length;
+          sourceStkLenIndex++
+        ) {
+          const sourceStkLen = sourceStkLens[sourceStkLenIndex];
+          if (sourceStkLen.quantity === "unlimited") break;
+          if (sourceStkLen.quantity > 0) {
+            if (sourceStkLen.quantity >= usedStkLenQty) {
+              sourceStkLen.quantity -= usedStkLenQty;
+              usedStkLenQty = 0;
+              break;
+            } else {
+              usedStkLenQty -= sourceStkLen.quantity;
+              sourceStkLen.quantity = 0;
+              continue;
+            }
+          }
+        }
+      }
+    }
+
+    return optimizations;
   }
 
   private OptimizeSortedParts(
@@ -630,6 +674,36 @@ export class Optimizer {
     result.successful = true;
 
     return result;
+  }
+
+  GetTotalPoolFromOptimizations(
+    optimizations: PartOptimization[],
+  ): StockLengthPool {
+    const stockLengths = optimizations
+      .filter((x) => x.successful && x.total_stock_lengths.length > 0)
+      .flatMap((x) => x.total_stock_lengths)
+      .filter((x) => x.quantity === "unlimited" || x.quantity > 0);
+
+    const stkLenGroups = groupBy(
+      stockLengths,
+      (x) => `${x.length}|${x.is_standard_length}`,
+    );
+
+    const pool = Object.values(stkLenGroups).map<StockLengths>((g) => ({
+      is_standard_length: g[0].is_standard_length,
+      length: g[0].length,
+      quantity: g.some((x) => x.quantity === "unlimited")
+        ? "unlimited"
+        : g.reduce(
+            (sum, x) => sum + (x.quantity === "unlimited" ? 0 : x.quantity),
+            0,
+          ),
+    }));
+
+    return {
+      type: "stock_length_pool",
+      stock_length_pool: pool,
+    };
   }
 
   async GroupParts(all_parts: Part[]): Promise<PartGroup[]> {

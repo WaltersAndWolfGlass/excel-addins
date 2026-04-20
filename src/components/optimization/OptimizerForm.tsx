@@ -5,6 +5,7 @@ import {
   PartOptimizationStore,
   PartOptimizationSettingsStore,
   StockLengths,
+  PartGroupLinkedStore,
 } from "@/model/optimization";
 import { toast } from "sonner";
 import { OptimizationContext } from "@/components/contexts/OptimizationContext";
@@ -12,6 +13,8 @@ import { OptimizeActionButton } from "./OptimizeActionButton";
 import { ImportPartsButton } from "./ImportPartsButton";
 import { ExtrusionTable } from "./extrusion-table/ExtrusionTable";
 import { ExportOptimizationButton } from "./ExportOptimizationButton";
+import { Toggle } from "../ui/toggle";
+import { LinkIcon, UnlinkIcon } from "lucide-react";
 
 export function getOptKey(partOptGroupKey: string, stklen: StockLengths) {
   return `${partOptGroupKey} | stklen: ${stklen.length}${stklen.is_standard_length ? " std" : ""}`;
@@ -32,6 +35,7 @@ export function OptimizerForm() {
     React.useState<PartOptimizationSettingsStore>({});
   const [optimizations, setOptimizations] =
     React.useState<PartOptimizationStore>({});
+  const [linkStore, setLinkStore] = React.useState<PartGroupLinkedStore>({});
 
   React.useEffect(() => {
     const checkOffice = async () => {
@@ -53,6 +57,8 @@ export function OptimizerForm() {
     <OptimizationContext
       excelState={excelState}
       setExcelState={setExcelState}
+      linkStore={linkStore}
+      setLinkStore={setLinkStore}
       partGroups={partGroups}
       setPartGroups={setPartGroups}
       optMode={optMode}

@@ -65,10 +65,6 @@ export class ExcelExtrusionData {
     let palletIndex = ustData.columns[0].findIndex((x: string) =>
       palletRegex.test(x),
     );
-    let fabOrderRegex = /order$/i;
-    let fabOrderIndex = ustData.columns[0].findIndex((x: string) =>
-      fabOrderRegex.test(x),
-    );
 
     let units: Record<string, Unit[]> = {};
 
@@ -86,29 +82,26 @@ export class ExcelExtrusionData {
 
         let unitId =
           unitIdIndex >= 0 && unitIdIndex < row.length ? row[unitIdIndex] : "";
-        let release =
-          releaseIndex >= 0 && releaseIndex < row.length
+        let release: string =
+          (releaseIndex >= 0 && releaseIndex < row.length
             ? row[releaseIndex]
-            : "";
-        let floor =
-          floorIndex >= 0 && floorIndex < row.length ? row[floorIndex] : "";
+            : "") ?? "";
+        let floor: string =
+          (floorIndex >= 0 && floorIndex < row.length ? row[floorIndex] : "") ??
+          "";
         let pallet =
           palletIndex >= 0 && palletIndex < row.length ? row[palletIndex] : "";
         let group =
           groupIndex >= 0 && groupIndex < row.length ? row[groupIndex] : "";
-        let fabOrder =
-          fabOrderIndex >= 0 && fabOrderIndex < row.length
-            ? row[fabOrderIndex]
-            : "";
 
         let unit: Unit = {
-          release: release ?? "",
-          floor: floor ?? "",
+          release: release,
+          floor: floor,
           unit_id: unitId ?? "",
           unit_number: unitNumber,
           pallet: pallet ?? "",
-          optimization_group: group ?? "",
-          fab_order: fabOrder ?? "",
+          optimization_group: `${release} / ${floor}`,
+          fab_order: group ?? "",
         };
 
         units[unitNumber].push(unit);

@@ -1,25 +1,18 @@
 import * as React from "react";
 import { TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PartGroup } from "@/model/optimization";
 
 export type CheckedState = boolean | "indeterminate";
 
 function InternalSelectRowCell({
-  partGroup,
   checked,
+  rowSpan = undefined,
 }: {
-  partGroup: PartGroup;
   checked: boolean;
+  rowSpan?: number;
 }) {
   return (
-    <TableCell
-      rowSpan={
-        partGroup.part_optimization_groups.length > 1
-          ? partGroup.part_optimization_groups.length + 1
-          : 1
-      }
-    >
+    <TableCell rowSpan={rowSpan}>
       <Checkbox checked={checked} />
     </TableCell>
   );

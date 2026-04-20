@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { DownloadIcon } from "lucide-react";
 import {
   ExcelStateContext,
+  PartGroupLinkedStoreContext,
   PartGroupsContext,
   PartOptimizationStoreContext,
 } from "../contexts/OptimizationContext";
@@ -30,6 +31,7 @@ export function ExportOptimizationButton({
   const excelState = React.useContext(ExcelStateContext);
   const partGroups = React.useContext(PartGroupsContext);
   const partOptStore = React.useContext(PartOptimizationStoreContext);
+  const linkStore = React.useContext(PartGroupLinkedStoreContext);
   const [_, startExport] = React.useTransition();
 
   async function exportOptimizations() {
@@ -39,6 +41,7 @@ export function ExportOptimizationButton({
         const exporter = new ExcelOptimizationExporter(
           partGroups,
           partOptStore,
+          linkStore,
         );
         const messages = await exporter.exportAll();
         messages.forEach((m) => toast.success(m));

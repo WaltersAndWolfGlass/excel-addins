@@ -1,8 +1,10 @@
 import { addTableData, autoFitAllColumns, createTable } from "./excel";
 import {
   PartGroup,
+  PartGroupLinkedStore,
   PartOptimizationSettingsStore,
   PartOptimizationStore,
+  calculatePartGroupKey,
   calculatePartOptimizationGroupKey,
 } from "./optimization";
 
@@ -25,6 +27,7 @@ const allTableNames = [
 type OrderFormRow = {
   part: string;
   finish: string;
+  group: string;
   stklen_size: number;
   is_standard_length: boolean;
   stklen_qty: number;
@@ -34,54 +37,82 @@ type OrderFormRow = {
   yield: number;
 };
 
+const total_group_name = "TOTAL";
+
+const orderFormSorter = (a: OrderFormRow, b: OrderFormRow) => {
+  if (a.stklen_size > b.stklen_size) return -1;
+  if (a.stklen_size < b.stklen_size) return 1;
+  if (a.is_standard_length < b.is_standard_length) return -1;
+  if (a.is_standard_length > b.is_standard_length) return 1;
+  return 0;
+};
+
 function getOrderFormRows(
   partGroups: PartGroup[],
   optStore: PartOptimizationStore,
 ): OrderFormRow[] {
   const rowData: OrderFormRow[] = [];
   for (let pgIndex = 0; pgIndex < partGroups.length; pgIndex++) {
+    const totalRows: OrderFormRow[] = [];
     const pg = partGroups[pgIndex];
-    const slOpts = pg.part_optimization_groups
-      .map((pog) => optStore[pog.key])
-      .flatMap((po) =>
-        po === undefined || po === "optimizing" ? [] : po.total_stock_lengths,
-      );
-    const rows: OrderFormRow[] = [];
-    for (let sloIndex = 0; sloIndex < slOpts.length; sloIndex++) {
-      const slOpt = slOpts[sloIndex];
-      let row = rows.find(
-        (x) =>
-          x.stklen_size === slOpt.length &&
-          x.is_standard_length === slOpt.is_standard_length,
-      );
-      if (row === undefined) {
-        row = {
+    for (
+      let pogIndex = 0;
+      pogIndex < pg.part_optimization_groups.length;
+      pogIndex++
+    ) {
+      const pog = pg.part_optimization_groups[pogIndex];
+      const rows: OrderFormRow[] = [];
+      const po = optStore[pog.key];
+      const slOpts =
+        po === undefined || po === "optimizing" ? [] : po.total_stock_lengths;
+      for (let slIndex = 0; slIndex < slOpts.length; slIndex++) {
+        const slOpt = slOpts[slIndex];
+        if (slOpt.quantity === "unlimited" || slOpt.quantity === 0) continue;
+
+        rows.push({
           part: pg.part_number,
           finish: pg.finish,
+          group: pog.optimization_group,
           stklen_size: slOpt.length,
           is_standard_length: slOpt.is_standard_length,
-          stklen_qty: 0,
-          net_parts: 0,
-          net_part_length: 0,
-          gross_length: 0,
-          yield: 0,
-        };
-        rows.push(row);
+          stklen_qty: slOpt.quantity,
+          net_parts: slOpt.net_parts,
+          net_part_length: slOpt.net_part_length,
+          gross_length: slOpt.gross_length,
+          yield: slOpt.yield,
+        });
+
+        let totalRow = totalRows.find(
+          (x) =>
+            x.stklen_size === slOpt.length &&
+            x.is_standard_length === slOpt.is_standard_length,
+        );
+        if (totalRow === undefined) {
+          totalRow = {
+            part: pg.part_number,
+            finish: pg.finish,
+            group: total_group_name,
+            stklen_size: slOpt.length,
+            is_standard_length: slOpt.is_standard_length,
+            stklen_qty: 0,
+            net_parts: 0,
+            net_part_length: 0,
+            gross_length: 0,
+            yield: 0,
+          };
+          totalRows.push(totalRow);
+        }
+        totalRow.stklen_qty += slOpt.quantity;
+        totalRow.net_parts += slOpt.net_parts;
+        totalRow.net_part_length += slOpt.net_part_length;
+        totalRow.gross_length += slOpt.gross_length;
+        totalRow.yield = totalRow.net_part_length / totalRow.gross_length;
       }
-      row.stklen_qty += slOpt.quantity === "unlimited" ? 0 : slOpt.quantity;
-      row.net_parts += slOpt.net_parts;
-      row.net_part_length += slOpt.net_part_length;
-      row.gross_length += slOpt.gross_length;
-      row.yield = row.net_part_length / row.gross_length;
+      rows.sort(orderFormSorter);
+      rowData.push(...rows);
     }
-    rows.sort((a, b) => {
-      if (a.stklen_size > b.stklen_size) return -1;
-      if (a.stklen_size < b.stklen_size) return 1;
-      if (a.is_standard_length < b.is_standard_length) return -1;
-      if (a.is_standard_length > b.is_standard_length) return 1;
-      return 0;
-    });
-    rowData.push(...rows);
+    totalRows.sort(orderFormSorter);
+    rowData.push(...totalRows);
   }
   return rowData;
 }
@@ -297,18 +328,25 @@ function formatColumnAsText(table: Excel.Table, column: string) {
 export default class ExcelOptimizationExporter {
   readonly partGroups: PartGroup[];
   readonly optStore: PartOptimizationStore;
+  readonly linkStore: PartGroupLinkedStore;
   readonly orderFormRows: OrderFormRow[];
   readonly cutlistRows: CutListRow[];
   readonly cutDetailRows: CutDetailRow[];
 
   constructor();
-  constructor(partGroups: PartGroup[], optStore: PartOptimizationStore);
+  constructor(
+    partGroups: PartGroup[],
+    optStore: PartOptimizationStore,
+    linkStore: PartGroupLinkedStore,
+  );
   constructor(
     partGroups: PartGroup[] = [],
     optStore: PartOptimizationStore = {},
+    linkStore: PartGroupLinkedStore = {},
   ) {
     this.partGroups = partGroups;
     this.optStore = optStore;
+    this.linkStore = linkStore;
 
     this.orderFormRows = getOrderFormRows(partGroups, optStore);
     this.cutlistRows = getCutListRows(partGroups, optStore);
@@ -318,26 +356,28 @@ export default class ExcelOptimizationExporter {
   private async exportStkLens(context: Excel.RequestContext) {
     let sheet = await createOrGetSheetAndClearTable(context, optStkLensName);
 
-    let table = createTable(sheet, "A1:F1", optStkLensName, [
+    let table = createTable(sheet, "A1:G1", optStkLensName, [
       [
         "Extrusion",
         "Finish",
-        "Group",
+        "Release/Level",
+        "Linked",
         "StockLengthSize",
         "IsStandardLength",
         "StockLengthQty",
       ],
     ]);
 
+    formatColumnAsCheckboxes(table, "Linked");
     formatColumnForWholeInch(table, "StockLengthSize");
     formatColumnAsCheckboxes(table, "IsStandardLength");
     formatColumnForWholeNumber(table, "StockLengthQty");
 
-    await stampUserAndTime(sheet, "H1:H2");
+    await stampUserAndTime(sheet, "I1:I2");
 
-    const data = this.partGroups
-      .flatMap((pg) => pg.part_optimization_groups)
-      .reduce((result, pog) => {
+    const data = this.partGroups.flatMap((pg) => {
+      const linked = this.linkStore[pg.key] ?? false;
+      return pg.part_optimization_groups.reduce((result, pog) => {
         const optimization = this.optStore[pog.key];
         if (optimization === undefined || optimization === "optimizing")
           return result;
@@ -346,6 +386,7 @@ export default class ExcelOptimizationExporter {
             pog.part_number,
             pog.finish,
             pog.optimization_group,
+            linked,
             sl.length,
             sl.is_standard_length,
             sl.quantity,
@@ -353,6 +394,7 @@ export default class ExcelOptimizationExporter {
         );
         return result;
       }, [] as any[][]);
+    });
     addTableData(table, data);
     autoFitAllColumns(sheet);
     await context.sync();
@@ -360,11 +402,14 @@ export default class ExcelOptimizationExporter {
 
   private async importPartOptSettingsStore(
     context: Excel.RequestContext,
-  ): Promise<PartOptimizationSettingsStore> {
+  ): Promise<{
+    settingsStore: PartOptimizationSettingsStore;
+    linkStore: PartGroupLinkedStore;
+  }> {
     let table = context.workbook.tables.getItemOrNullObject(optStkLensName);
     await context.sync();
 
-    if (table.isNullObject) return {};
+    if (table.isNullObject) return { settingsStore: {}, linkStore: {} };
 
     let headerRange = table.getHeaderRowRange().load("values");
     let dataRange = table.getDataBodyRange().load("values");
@@ -374,26 +419,28 @@ export default class ExcelOptimizationExporter {
     const headers = headerRange.values[0];
     const extIndex = headers.findIndex((x) => x === "Extrusion");
     const finishIndex = headers.findIndex((x) => x === "Finish");
-    const groupIndex = headers.findIndex((x) => x === "Group");
+    const groupIndex = headers.findIndex((x) => x === "Release/Level");
+    const linkedIndex = headers.findIndex((x) => x === "Linked");
     const sizeIndex = headers.findIndex((x) => x === "StockLengthSize");
     const stdlenIndex = headers.findIndex((x) => x === "IsStandardLength");
     const qtyIndex = headers.findIndex((x) => x === "StockLengthQty");
 
-    const store: PartOptimizationSettingsStore = {};
+    const settingsStore: PartOptimizationSettingsStore = {};
+    const linkStore: PartGroupLinkedStore = {};
 
     dataRange.values.forEach((row) => {
-      const key = calculatePartOptimizationGroupKey(
+      const pogKey = calculatePartOptimizationGroupKey(
         row[extIndex],
         row[finishIndex],
         row[groupIndex],
       );
-      let settings = store[key];
+      let settings = settingsStore[pogKey];
       if (settings === undefined) {
         settings = {
           type: "stock_length_pool",
           stock_length_pool: [],
         };
-        store[key] = settings;
+        settingsStore[pogKey] = settings;
       }
       if (settings.type === "stock_length_pool") {
         settings.stock_length_pool.push({
@@ -402,9 +449,12 @@ export default class ExcelOptimizationExporter {
           quantity: row[qtyIndex],
         });
       }
+
+      const pgKey = calculatePartGroupKey(row[extIndex], row[finishIndex]);
+      linkStore[pgKey] = row[linkedIndex];
     });
 
-    return store;
+    return { settingsStore: settingsStore, linkStore: linkStore };
   }
 
   private async exportOrderForm(context: Excel.RequestContext) {
@@ -469,6 +519,10 @@ export default class ExcelOptimizationExporter {
         return (r) => r.part;
       } else if (/^(text21|fin(ish)?)$/i.test(header)) {
         return (r) => r.finish;
+      } else if (
+        /^(rel(ease)?|level|lvl|rel(ease)? ?\/ ?(level|lvl))$/i.test(header)
+      ) {
+        return (r) => r.group;
       } else if (/^(is[-_ ])?(standard|std)[-_ ]?len(gth)?$/i.test(header)) {
         return (r) => r.is_standard_length;
       } else if (/^net[-_ ]?len(gth)?$/i.test(header)) {
@@ -507,7 +561,7 @@ export default class ExcelOptimizationExporter {
     let table = createTable(sheet, "A1:M1", optCutListName, [
       [
         "CutList#",
-        "Group",
+        "Release/Level",
         "Ext",
         "Finish",
         "StkLenSize",
@@ -567,7 +621,7 @@ export default class ExcelOptimizationExporter {
       if (/^cut[-_ ]?list([-_ ]?(#|no\.?|num(ber)?))?$/i.test(header)) {
         return (r) => r.cutlist;
       } else if (
-        /^((opt(imization)?|fab(rication)?)[-_ ]?)?group$/i.test(header)
+        /^(rel(ease)?|level|lvl|rel(ease)? ?\/ ?(level|lvl))$/i.test(header)
       ) {
         return (r) => r.group;
       } else if (
@@ -617,7 +671,7 @@ export default class ExcelOptimizationExporter {
 
     let table = createTable(sheet, "A1:N1", optCutDetailsName, [
       [
-        "Group",
+        "Release/Level",
         "Ext",
         "Finish",
         "StkLen#",
@@ -674,7 +728,9 @@ export default class ExcelOptimizationExporter {
     const valueFunctions: ((
       r: CutDetailRow,
     ) => string | number | boolean | null)[] = headers.map((header) => {
-      if (/^((opt(imization)?|fab(rication)?)[-_ ]?)?group$/i.test(header)) {
+      if (
+        /^(rel(ease)?|level|lvl|rel(ease)? ?\/ ?(level|lvl))$/i.test(header)
+      ) {
         return (r) => r.group;
       } else if (
         /^(part|ext(rusion)?)([-_ ]?(num(ber)?|no\.?|#))?$/i.test(header)
@@ -722,9 +778,9 @@ export default class ExcelOptimizationExporter {
     const messages: string[] = [];
     await Excel.run(async (context) => {
       await this.exportStkLens(context);
-      await this.exportOrderForm(context);
-      await this.exportCutList(context);
-      await this.exportCutDetails(context);
+      // await this.exportOrderForm(context);
+      // await this.exportCutList(context);
+      // await this.exportCutDetails(context);
       messages.push(`Updated WWOpt Tabs`);
 
       let workbook = context.workbook;
@@ -759,10 +815,13 @@ export default class ExcelOptimizationExporter {
   }
 
   async importPartOptSettingsFromAnotherRun() {
-    let settingsStore: PartOptimizationSettingsStore = {};
+    let results: {
+      settingsStore: PartOptimizationSettingsStore;
+      linkStore: PartGroupLinkedStore;
+    } = { settingsStore: {}, linkStore: {} };
     await Excel.run(async (context) => {
-      settingsStore = await this.importPartOptSettingsStore(context);
+      results = await this.importPartOptSettingsStore(context);
     });
-    return settingsStore;
+    return results;
   }
 }

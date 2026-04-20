@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils";
 function InternalPartOptGroupNameCell({
   partOptGroup,
   rowSpan = 1,
+  className = "",
 }: {
   partOptGroup: PartOptimizationGroup;
   rowSpan?: number;
+  className?: string;
 }) {
   let style = "";
   let color = "";
@@ -21,7 +23,7 @@ function InternalPartOptGroupNameCell({
   }
 
   return (
-    <TableCell rowSpan={rowSpan} className={cn(style, color)}>
+    <TableCell rowSpan={rowSpan} className={cn(style, color, className)}>
       {text}
     </TableCell>
   );
