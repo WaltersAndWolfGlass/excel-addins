@@ -3,6 +3,7 @@ import { Job } from "@/data/job";
 import { PhaseCode } from "@/data/phasecode";
 import { TaxCode } from "@/data/taxcode";
 import { ShipLoc } from "@/data/shiploc";
+import { TryGetVistaJobNumber } from "@/lib/domain";
 
 export type Company = {
   id: number;
@@ -11,15 +12,8 @@ export type Company = {
 
 export async function getCompanies(): Promise<Company[]> {
   return [
-    { id: 1, name: "W&W Glass" },
-    { id: 2, name: "W&W Interiors" },
-    { id: 3, name: "W&W Curtain Wall (Seattle)" },
-    { id: 201, name: "Testing 201" },
-    { id: 202, name: "Testing 202" },
-    { id: 203, name: "Testing 203" },
-    { id: 204, name: "Testing 204" },
-    { id: 205, name: "Testing 205" },
-    { id: 206, name: "Testing 206" },
+    { id: 1, name: "Walters & Wolf Glass Company" },
+    { id: 201, name: "WWG TEST!!!" },
   ];
 }
 
@@ -38,49 +32,7 @@ export async function getDivisions(
         { id: 2, name: "Southern California" },
         { id: 3, name: "Las Vegas, Nevada" },
       ];
-    case "2":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "3":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
     case "201":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "202":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "203":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "204":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "205":
-      return [
-        { id: 1, name: "Northern California" },
-        { id: 2, name: "Southern California" },
-        { id: 3, name: "Las Vegas, Nevada" },
-      ];
-    case "206":
       return [
         { id: 1, name: "Northern California" },
         { id: 2, name: "Southern California" },
@@ -111,17 +63,37 @@ export async function getVendors(
 }
 
 export async function getJobs(companyId: number | string): Promise<Job[]> {
-  let response = await fetch(
-    `${apiBase}/GetJobsByCompany?companyId=${companyId}`,
-  );
-  if (!response.ok) throw new Error("Fetch Jobs failed.");
-  let jobs: Job[] = await response.json();
+  const companyIdsToSearch: string[] = [];
+  switch (companyId) {
+    case 1:
+    case "1":
+    default:
+      // Fremont, LaVerne, and LasVegas jobs... covers old style job numbers and new
+      companyIdsToSearch.push("1", "7", "9");
+      break;
+  }
+  const jobs: Job[] = [];
+  for (
+    let companyIndex = 0;
+    companyIndex < companyIdsToSearch.length;
+    companyIndex++
+  ) {
+    const compId = companyIdsToSearch[companyIndex];
+    const response = await fetch(
+      `${apiBase}/GetJobsByCompany?companyId=${compId}`,
+    );
+    if (!response.ok) throw new Error("Fetch Jobs failed.");
+    const companyJobs: Job[] = await response.json();
+    jobs.push(...companyJobs);
+  }
   for (let job of jobs) {
     job.JobNumber = job.JobNumber.trim().replace(/-$/, "");
-    if (job.JobNumber.match(/^[179]0-/)) {
-      job.JobNumber = `25${job.JobNumber.substring(0, 1)}${job.JobNumber.substring(3)}`;
-    }
     job.JobName = job.JobName?.trim();
+    const [converted, vistaJobNumber] = TryGetVistaJobNumber(job.JobNumber);
+    if (converted) {
+      job.JobName = job.JobName + ` (${job.JobNumber})`;
+      job.JobNumber = vistaJobNumber;
+    }
   }
   return jobs;
 }

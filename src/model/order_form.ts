@@ -14,6 +14,7 @@ export type OrderFormLineItem = {
   units: "EA" | "LF";
   quantity: number;
   price_per_unit: number;
+  mark_number: string;
 };
 
 export class OrderForm {
@@ -116,7 +117,7 @@ export class OrderForm {
 
       let { firstRow: _, lastRow } = await this.GetMetalDataRowLimits(
         context,
-        sheet
+        sheet,
       );
 
       let vendorRange = getRangeAndLoadValues(sheet, "K10");
@@ -181,7 +182,7 @@ export class OrderForm {
 
   private async GetMetalDataRowLimits(
     context: any,
-    sheet: any
+    sheet: any,
   ): Promise<{ firstRow: number; lastRow: number }> {
     var firstRow: number;
     var lastRow: number;
@@ -203,7 +204,7 @@ export class OrderForm {
       lastRow =
         range.values.findIndex(
           (e: any) =>
-            e.length > 0 && String(e[0])?.toUpperCase().includes("SET-UP")
+            e.length > 0 && String(e[0])?.toUpperCase().includes("SET-UP"),
         ) + 19;
     }
     return { firstRow: firstRow, lastRow: lastRow };
@@ -240,7 +241,7 @@ export class OrderForm {
     let values = await getValues(
       context,
       sheet,
-      `C${limits.firstRow}:N${limits.lastRow}`
+      `C${limits.firstRow}:N${limits.lastRow}`,
     );
 
     return values
@@ -276,6 +277,7 @@ export class OrderForm {
           units: "EA",
           quantity: qty,
           price_per_unit: price,
+          mark_number: "",
         };
       });
   }
@@ -289,11 +291,11 @@ export class OrderForm {
       let jobNumberRange = getRangeAndLoadValues(firstOrderSheet, "JobNumber");
       let orderDateRange = getRangeAndLoadValues(
         firstOrderSheet,
-        "DateOrdered"
+        "DateOrdered",
       );
       let expectedDateRange = getRangeAndLoadValues(
         firstOrderSheet,
-        "DeliveryDate"
+        "DeliveryDate",
       );
 
       await context.sync();
@@ -391,15 +393,15 @@ export class OrderForm {
         var desc = "";
         if (sheettype === "raked") {
           desc = `${qty} @ ${new Fraction(base).toFraction(
-            true
+            true,
           )} x ${new Fraction(left).toFraction(true)} x ${new Fraction(
-            right
+            right,
           ).toFraction(true)} ${markStyle} ${mark}`;
         } else if (sheettype === "patterns") {
           desc = `${qty} @ SEE DWG ${markStyle} ${mark}`;
         } else if (sheettype === "normal") {
           desc = `${qty} @ ${new Fraction(width).toFraction(
-            true
+            true,
           )} x ${new Fraction(height).toFraction(true)} ${markStyle} ${mark}`;
         } else {
           desc = `${qty} @ [unknown] x [unknown] ${markStyle} ${mark}`;
@@ -410,6 +412,7 @@ export class OrderForm {
           units: "EA",
           quantity: qty,
           price_per_unit: price * sqft,
+          mark_number: mark,
         });
       }
     }

@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { FormTextBox } from "@/components/form-textbox";
 import { FormSelect } from "@/components/form-select";
 import {
@@ -18,7 +17,6 @@ import {
   FieldSeparator,
   FieldSet,
 } from "@/components/ui/field";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { OrderForm, OrderFormLineItem } from "@/model/order_form";
 import {
   Company,
@@ -37,6 +35,7 @@ import { PhaseCode } from "@/data/phasecode";
 import { TaxCode } from "@/data/taxcode";
 import { ShipLoc } from "@/data/shiploc";
 import { alphaNumCompare } from "@/lib/sorters";
+import { TryGetVistaJobNumber } from "@/lib/domain";
 
 const optionalString = z
   .optional(z.string().trim())
@@ -44,6 +43,12 @@ const optionalString = z
 const reqString = optionalString.pipe(z.string({ message: "Required" }));
 const reqJobNumber = reqString.pipe(
   z.string().regex(/^[A-Z0-9][-A-Z0-9]*[A-Z0-9]$/, "Not a valid job number"),
+);
+const reqOrderedBy = reqString.pipe(
+  z
+    .string()
+    .min(2, "Must be 2-10 characters")
+    .max(10, "Must be 2-10 characters"),
 );
 const reqDate = z.date({
   error: (issue) => (issue.input === undefined ? "Required" : "Invalid date"),
@@ -67,7 +72,7 @@ const formSchema = z.object({
   po_description: reqString,
   order_date: reqDate,
   expected_date: reqDate,
-  ordered_by: reqString,
+  ordered_by: reqOrderedBy,
   jc_company: reqId,
   job_number: reqJobNumber,
   warranty: reqCountingNumber,
@@ -78,11 +83,8 @@ const formSchema = z.object({
   ship_state: reqString,
   ship_zip: reqString,
   ship_instructions: optionalString,
-  item_type: reqCountingNumber,
   cost_code: reqJobNumber,
   division: reqCountingNumber,
-  pay_type: reqCountingNumber,
-  tax_type: reqCountingNumber,
   tax_code: reqString,
 });
 
@@ -109,11 +111,8 @@ export function VistaExportForm() {
       ship_state: "",
       ship_zip: "",
       ship_instructions: "",
-      item_type: "1", // 1 = job, 2 = inventory
       cost_code: "",
       division: "",
-      pay_type: "2", // type of payable, ie job, AP, retention
-      tax_type: "1", // 1 = sales tax
       tax_code: "",
     },
   });
@@ -151,7 +150,8 @@ export function VistaExportForm() {
       setExcelState("ready");
       let authContext = await Office.auth.getAuthContext();
       const email = authContext.userPrincipalName;
-      form.setValue("ordered_by", email);
+      const initials = email.substring(0, 2).toUpperCase();
+      form.setValue("ordered_by", initials);
     };
 
     setTimeout(checkOffice, 1000);
@@ -314,7 +314,7 @@ export function VistaExportForm() {
   function onSubmit(data: z.infer<typeof formSchema>) {
     constructText(data).then((text) => {
       setExportText(text);
-      setExportFileName(`${data.po_description} (${data.job_number}).tsv`);
+      setExportFileName(`${data.po_description} (${data.job_number}).csv`);
       setExportCount(exportCount + 1);
     });
     toast.success("Exported! Check your downloads folder.");
@@ -328,6 +328,7 @@ export function VistaExportForm() {
 
     let header: string = [
       "POHB",
+      "1",
       data.po_number,
       data.vendor_number,
       data.po_description,
@@ -345,7 +346,6 @@ export function VistaExportForm() {
       data.ship_zip,
       data.ship_instructions,
       formatDate(new Date(today.getFullYear(), today.getMonth()), ""),
-      "reckey",
     ].join("\t");
 
     if (typeof lineItems === "string") {
@@ -356,22 +356,20 @@ export function VistaExportForm() {
     let lines = lineItems.map((x: OrderFormLineItem) => {
       return [
         "POIB",
+        "1",
         i++,
-        data.item_type,
         data.jc_company,
         data.job_number,
-        "", // material #
         data.cost_code,
         x.description,
         formatDate(data.expected_date, ""),
         data.division,
-        data.pay_type,
         x.units,
         x.quantity,
         x.price_per_unit,
-        data.tax_type,
+        "E",
         data.tax_code,
-        "reckey",
+        x.mark_number,
       ].join("\t");
     });
 
@@ -388,10 +386,26 @@ export function VistaExportForm() {
 
       if (orderForm.form_type === "metal") {
         form.setValue("po_description", "Metal Order");
-        form.setValue("job_number", orderForm.job_number ?? "");
+        const [converted, vistaJobNumber] = TryGetVistaJobNumber(
+          orderForm.job_number ?? "",
+        );
+        if (converted) {
+          form.setValue("job_number", vistaJobNumber);
+        } else {
+          form.setValue("job_number", orderForm.job_number ?? "");
+        }
         // needs to fill in vendor field
         form.setValue("cost_code", orderForm.cost_code ?? "");
-        form.setValue("ordered_by", orderForm.ordered_by ?? "");
+        if (orderForm.ordered_by?.includes(" ")) {
+          const words = orderForm.ordered_by.split(" ");
+          const initials = words
+            .map((w) => w.substring(0, 1))
+            .join("")
+            .toUpperCase();
+          form.setValue("ordered_by", initials);
+        } else {
+          form.setValue("ordered_by", orderForm.ordered_by ?? "");
+        }
         if (orderForm.order_date) {
           form.setValue("order_date", orderForm.order_date);
         } else {
@@ -430,7 +444,14 @@ export function VistaExportForm() {
         }
 
         form.setValue("po_description", desc);
-        form.setValue("job_number", orderForm.job_number ?? "");
+        const [converted, vistaJobNumber] = TryGetVistaJobNumber(
+          orderForm.job_number ?? "",
+        );
+        if (converted) {
+          form.setValue("job_number", vistaJobNumber);
+        } else {
+          form.setValue("job_number", orderForm.job_number ?? "");
+        }
         // needs to fill in vendor field
         if (orderForm.order_date) {
           form.setValue("order_date", orderForm.order_date);
