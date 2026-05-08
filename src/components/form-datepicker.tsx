@@ -1,9 +1,6 @@
-import * as React from "react"
-import { Controller } from "react-hook-form"
-import {
-  Field,
-  FieldLabel,
-} from "@/components/ui/field"
+import * as React from "react";
+import { Controller } from "react-hook-form";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { FormFieldErrorMessage } from "@/components/form-fielderror-message";
 import { DatePicker } from "@/components/datepicker";
 
@@ -11,21 +8,25 @@ interface FormDatePickerProps {
   control: any;
   name: string;
   label: string;
-  required?: boolean;
   disabled?: boolean;
+  hidden?: boolean;
 }
 
-export function FormDatePicker({ control, name, label, required = false, disabled = false }: FormDatePickerProps) {
+export function FormDatePicker({
+  control,
+  name,
+  label,
+  disabled = false,
+  hidden = false,
+}: FormDatePickerProps) {
   const datePickerId = React.useId();
   return (
     <Controller
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={datePickerId}>
-            {label}{required ? " *" : ""}
-          </FieldLabel>
+        <Field data-invalid={fieldState.invalid} hidden={hidden}>
+          <FieldLabel htmlFor={datePickerId}>{label}</FieldLabel>
           <DatePicker
             id={datePickerId}
             date={field.value}
@@ -37,5 +38,5 @@ export function FormDatePicker({ control, name, label, required = false, disable
         </Field>
       )}
     />
-  )
+  );
 }

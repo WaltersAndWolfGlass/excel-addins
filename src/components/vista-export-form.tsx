@@ -11,12 +11,7 @@ import {
   FormComboSearchBox,
 } from "@/components/form-combosearchbox";
 import { FormDatePicker } from "@/components/form-datepicker";
-import {
-  FieldGroup,
-  FieldLegend,
-  FieldSeparator,
-  FieldSet,
-} from "@/components/ui/field";
+import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field";
 import { OrderForm, OrderFormLineItem } from "@/model/order_form";
 import {
   Company,
@@ -36,6 +31,8 @@ import { TaxCode } from "@/data/taxcode";
 import { ShipLoc } from "@/data/shiploc";
 import { alphaNumCompare } from "@/lib/sorters";
 import { TryGetVistaJobNumber } from "@/lib/domain";
+import { FormSwitch } from "./form-switch";
+import { cn } from "@/lib/utils";
 
 const optionalString = z
   .optional(z.string().trim())
@@ -43,6 +40,9 @@ const optionalString = z
 const reqString = optionalString.pipe(z.string({ message: "Required" }));
 const reqJobNumber = reqString.pipe(
   z.string().regex(/^[A-Z0-9][-A-Z0-9]*[A-Z0-9]$/, "Not a valid job number"),
+);
+const reqCostCode = reqString.pipe(
+  z.string().regex(/^[A-Z0-9][-A-Z0-9]*[A-Z0-9]$/, "Not a valid cost code"),
 );
 const reqOrderedBy = reqString.pipe(
   z
@@ -59,6 +59,12 @@ const reqId = reqString.pipe(
     .positive({ message: "Invalid id" })
     .pipe(z.int32({ message: "Invalid id" })),
 );
+const reqWholeNumber = reqString.pipe(
+  z.coerce
+    .number<string>({ message: "Must be a number" })
+    .gte(0, { message: "Must be zero or greater" })
+    .pipe(z.int({ message: "Must be a whole number" })),
+);
 const reqCountingNumber = optionalString.pipe(
   z.coerce
     .number<string>({ message: "Required" })
@@ -66,27 +72,41 @@ const reqCountingNumber = optionalString.pipe(
     .pipe(z.int({ message: "Must be a counting number" })),
 );
 
-const formSchema = z.object({
-  po_number: reqString,
-  vendor_number: reqString,
-  po_description: reqString,
-  order_date: reqDate,
-  expected_date: reqDate,
-  ordered_by: reqOrderedBy,
-  jc_company: reqId,
-  job_number: reqJobNumber,
-  warranty: reqCountingNumber,
-  ship_location: reqId,
-  ship_attention: optionalString,
-  ship_street_address: reqString,
-  ship_city: reqString,
-  ship_state: reqString,
-  ship_zip: reqString,
-  ship_instructions: optionalString,
-  cost_code: reqJobNumber,
-  division: reqCountingNumber,
-  tax_code: reqString,
-});
+const formSchema = z.discriminatedUnion("createPO", [
+  z.object({
+    createPO: z.literal(true),
+    vendor_number: reqString,
+    po_description: reqString,
+    order_date: reqDate,
+    expected_date: reqDate,
+    ordered_by: reqOrderedBy,
+    jc_company: reqId,
+    job_number: reqJobNumber,
+    warranty: reqWholeNumber,
+    ship_location: reqId,
+    ship_attention: optionalString,
+    ship_street_address: reqString,
+    ship_city: reqString,
+    ship_state: reqString,
+    ship_zip: reqString,
+    ship_instructions: optionalString,
+    cost_code: reqCostCode,
+    division: reqCountingNumber,
+    tax_code: reqString,
+  }),
+  z.object({
+    createPO: z.literal(false),
+    po_number: reqString,
+    first_item_number: reqCountingNumber,
+    po_description: reqString,
+    expected_date: reqDate,
+    jc_company: reqId,
+    job_number: reqJobNumber,
+    cost_code: reqCostCode,
+    division: reqCountingNumber,
+    tax_code: reqString,
+  }),
+]);
 
 export type ExcelState = "ready" | "unchecked" | "failure";
 
@@ -95,22 +115,13 @@ export function VistaExportForm() {
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     defaultValues: {
-      po_number: "NEW",
-      vendor_number: "",
+      createPO: false,
+      po_number: "",
+      first_item_number: "1",
       po_description: "",
-      order_date: undefined,
       expected_date: undefined,
-      ordered_by: "",
       jc_company: "",
       job_number: "",
-      warranty: "",
-      ship_location: "",
-      ship_attention: "",
-      ship_street_address: "",
-      ship_city: "",
-      ship_state: "",
-      ship_zip: "",
-      ship_instructions: "",
       cost_code: "",
       division: "",
       tax_code: "",
@@ -136,6 +147,7 @@ export function VistaExportForm() {
   const [shipLocs, setShipLocs] = React.useState<(ComboBoxItem & ShipLoc)[]>(
     [],
   );
+  const [createPO, setCreatePO] = React.useState(false);
 
   React.useEffect(() => {
     const checkOffice = async () => {
@@ -171,8 +183,13 @@ export function VistaExportForm() {
   React.useEffect(() => {
     const subscription = form.watch((data, { name }) => {
       switch (name) {
+        case "createPO":
+          setCreatePO(data.createPO ?? false);
+          break;
         case "jc_company":
           if (data.jc_company) {
+            form.resetField("po_number");
+            form.resetField("first_item_number");
             form.resetField("division");
             form.resetField("vendor_number");
             form.resetField("job_number");
@@ -228,6 +245,8 @@ export function VistaExportForm() {
               );
             });
           } else {
+            form.resetField("po_number");
+            form.resetField("first_item_number");
             form.resetField("division");
             form.resetField("vendor_number");
             form.resetField("job_number");
@@ -250,6 +269,7 @@ export function VistaExportForm() {
           break;
         case "job_number":
           if (data.job_number) {
+            form.resetField("first_item_number");
             form.resetField("cost_code");
             setJobSelected(true);
             getPhaseCodes(data.job_number ?? "").then((pcs) => {
@@ -263,13 +283,14 @@ export function VistaExportForm() {
               );
             });
           } else {
+            form.resetField("first_item_number");
             form.resetField("cost_code");
             setJobSelected(false);
             setCostCodes([]);
           }
           break;
         case "ship_location":
-          if (data.ship_location) {
+          if (data.createPO && data.ship_location) {
             let filteredShipLocs = shipLocs.filter(
               (x) => x.Code == data.ship_location,
             );
@@ -301,7 +322,8 @@ export function VistaExportForm() {
     return () => subscription.unsubscribe();
   }, [form.watch, shipLocs]);
 
-  function formatDate(date: Date, delimeter: string = "/"): string {
+  function formatDate(date?: Date, delimeter: string = "/"): string {
+    if (date === undefined) return "";
     return (
       (date.getMonth() + 1).toString().padStart(2, "0") +
       delimeter +
@@ -328,23 +350,23 @@ export function VistaExportForm() {
 
     let header: string = [
       "POHB",
-      "1",
-      data.po_number,
-      data.vendor_number,
-      data.po_description,
-      formatDate(data.order_date, ""),
+      "1", // reckey
+      data.createPO ? "" : (data.po_number ?? ""),
+      data.createPO ? (data.vendor_number ?? "") : "",
+      data.po_description ?? "",
+      data.createPO ? formatDate(data.order_date, "") : "",
       formatDate(data.expected_date, ""),
-      data.ordered_by,
+      data.createPO ? (data.ordered_by ?? "") : "",
       data.jc_company,
       data.job_number,
-      data.warranty,
-      data.ship_location,
-      data.ship_attention,
-      data.ship_street_address,
-      data.ship_city,
-      data.ship_state,
-      data.ship_zip,
-      data.ship_instructions,
+      data.createPO ? (data.warranty ?? "0") : "",
+      data.createPO ? (data.ship_location ?? "") : "",
+      data.createPO ? (data.ship_attention ?? "") : "",
+      data.createPO ? (data.ship_street_address ?? "") : "",
+      data.createPO ? (data.ship_city ?? "") : "",
+      data.createPO ? (data.ship_state ?? "") : "",
+      data.createPO ? (data.ship_zip ?? "") : "",
+      data.createPO ? (data.ship_instructions ?? "") : "",
       formatDate(new Date(today.getFullYear(), today.getMonth()), ""),
     ].join("\t");
 
@@ -352,11 +374,11 @@ export function VistaExportForm() {
       return header;
     }
 
-    var i = 1;
+    var i = data.createPO ? 1 : (data.first_item_number ?? 1);
     let lines = lineItems.map((x: OrderFormLineItem) => {
       return [
         "POIB",
-        "1",
+        "1", // reckey
         i++,
         data.jc_company,
         data.job_number,
@@ -385,6 +407,12 @@ export function VistaExportForm() {
       }
 
       if (orderForm.form_type === "metal") {
+        if (orderForm.po_number) {
+          form.setValue("createPO", false);
+          form.setValue("po_number", orderForm.po_number ?? "");
+        } else {
+          form.setValue("createPO", true);
+        }
         form.setValue("po_description", "Metal Order");
         const [converted, vistaJobNumber] = TryGetVistaJobNumber(
           orderForm.job_number ?? "",
@@ -443,6 +471,12 @@ export function VistaExportForm() {
             break;
         }
 
+        if (orderForm.po_number) {
+          form.setValue("createPO", false);
+          form.setValue("po_number", orderForm.po_number ?? "");
+        } else {
+          form.setValue("createPO", true);
+        }
         form.setValue("po_description", desc);
         const [converted, vistaJobNumber] = TryGetVistaJobNumber(
           orderForm.job_number ?? "",
@@ -482,15 +516,20 @@ export function VistaExportForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="mb-8"
       >
-        <FieldSet>
-          <FieldGroup className="sm:grid sm:grid-cols-2">
-            <FieldGroup className="min-w-3xs">
-              <FieldLegend className="font-bold">Information</FieldLegend>
+        <FieldGroup
+          className={cn(
+            "flex-wrap",
+            "sm:max-h-200",
+            "*:min-w-[calc((100%-var(--spacing)*7*2)/3)]",
+          )}
+        >
+          <FieldSet key="companySection">
+            <FieldLegend>Company Information</FieldLegend>
+            <FieldGroup>
               <FormSelect
                 name="jc_company"
                 control={form.control}
                 label="Company"
-                required={true}
                 items={companies.map((x) => ({
                   value: x.id.toString(),
                   label: x.name,
@@ -500,13 +539,17 @@ export function VistaExportForm() {
                 name="division"
                 control={form.control}
                 label="Division"
-                required={true}
                 disabled={!companySelected}
                 items={divisions.map((x) => ({
                   value: x.id.toString(),
                   label: x.name,
                 }))}
               />
+            </FieldGroup>
+          </FieldSet>
+          <FieldSet key="excelSection">
+            <FieldLegend>Excel</FieldLegend>
+            <FieldGroup>
               <Button
                 variant="outline"
                 onClick={readSheetHeader}
@@ -514,26 +557,16 @@ export function VistaExportForm() {
               >
                 Import from Excel
               </Button>
-              <FormTextBox
-                name="po_description"
-                control={form.control}
-                label="Description"
-                required={true}
-              />
+            </FieldGroup>
+          </FieldSet>
+          <FieldSet key="jobSection">
+            <FieldLegend>Job Information</FieldLegend>
+            <FieldGroup>
               <FormComboSearchBox
                 name="job_number"
                 control={form.control}
                 label="Job"
                 items={jobs}
-                required={true}
-                disabled={!companySelected}
-              />
-              <FormComboSearchBox
-                name="vendor_number"
-                control={form.control}
-                label="Vendor"
-                items={vendors}
-                required={true}
                 disabled={!companySelected}
               />
               <FormComboSearchBox
@@ -541,44 +574,84 @@ export function VistaExportForm() {
                 control={form.control}
                 label="Cost Code"
                 items={costCodes}
-                required={true}
                 disabled={!companySelected || !jobSelected}
+              />
+              <FormComboSearchBox
+                name="tax_code"
+                control={form.control}
+                label="Tax Code"
+                items={taxCodes}
+                disabled={!companySelected}
+              />
+            </FieldGroup>
+          </FieldSet>
+          <FieldSet key="purchasingSection">
+            <FieldLegend>Purchasing Information</FieldLegend>
+            <FieldGroup>
+              <FormSwitch
+                name="createPO"
+                control={form.control}
+                label="Create New Purchase Order"
+              />
+              <FormTextBox
+                name="po_number"
+                control={form.control}
+                label="PO Number"
+                hidden={createPO}
+              />
+              <FormTextBox
+                name="first_item_number"
+                control={form.control}
+                label="First PO Item Number"
+                hidden={createPO}
+              />
+              <FormTextBox
+                name="po_description"
+                control={form.control}
+                label="Description"
+              />
+              <FormComboSearchBox
+                name="vendor_number"
+                control={form.control}
+                label="Vendor"
+                items={vendors}
+                disabled={!companySelected}
+                hidden={!createPO}
               />
               <FormDatePicker
                 name="order_date"
                 control={form.control}
                 label="Order Date"
-                required={true}
+                hidden={!createPO}
               />
               <FormDatePicker
                 name="expected_date"
                 control={form.control}
                 label="Expected Date"
-                required={true}
               />
               <FormTextBox
                 name="ordered_by"
                 control={form.control}
                 label="Ordered By"
-                required={true}
+                hidden={!createPO}
               />
               <FormTextBox
                 name="warranty"
                 control={form.control}
                 label="Warranty"
-                required={true}
                 suffix="years"
+                hidden={!createPO}
               />
             </FieldGroup>
-            <FieldSeparator className="min-w-3xs sm:hidden" />
-            <FieldGroup className="min-w-3xs">
-              <FieldLegend className="font-bold">Shipping</FieldLegend>
+          </FieldSet>
+          <FieldSet key="shippingSection" hidden={!createPO}>
+            <FieldLegend>Shipping</FieldLegend>
+            <FieldGroup>
               <FormComboSearchBox
                 name="ship_location"
                 control={form.control}
                 label="Shipping Location"
                 items={shipLocs}
-                required={true}
                 disabled={!companySelected}
               />
               <FormTextBox
@@ -595,37 +668,21 @@ export function VistaExportForm() {
                 name="ship_street_address"
                 control={form.control}
                 label="Street Address"
-                required={true}
               />
               <FormTextBox
                 name="ship_city"
                 control={form.control}
                 label="City"
-                required={true}
               />
               <FormTextBox
                 name="ship_state"
                 control={form.control}
                 label="State"
-                required={true}
               />
-              <FormTextBox
-                name="ship_zip"
-                control={form.control}
-                label="Zip"
-                required={true}
-              />
-              <FormComboSearchBox
-                name="tax_code"
-                control={form.control}
-                label="Tax Code"
-                items={taxCodes}
-                required={true}
-                disabled={!companySelected}
-              />
+              <FormTextBox name="ship_zip" control={form.control} label="Zip" />
             </FieldGroup>
-          </FieldGroup>
-        </FieldSet>
+          </FieldSet>
+        </FieldGroup>
       </form>
       <Button
         type="submit"

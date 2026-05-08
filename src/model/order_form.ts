@@ -20,6 +20,7 @@ export type OrderFormLineItem = {
 export class OrderForm {
   form_type: "metal" | "glass" | "misc" | "unknown" = "unknown";
   form_subtype: "n/a" | "glass" | "aluminum" | "composite" | "door" = "n/a";
+  po_number: string | undefined = undefined;
   vendor: string | undefined = undefined;
   order_date: Date | undefined = undefined;
   expected_date: Date | undefined = undefined;
@@ -120,6 +121,7 @@ export class OrderForm {
         sheet,
       );
 
+      let poNumberRange = getRangeAndLoadValues(sheet, "O11");
       let vendorRange = getRangeAndLoadValues(sheet, "K10");
       let jobNumberRange = getRangeAndLoadValues(sheet, "K12");
       let costCodeRange = getRangeAndLoadValues(sheet, "K13");
@@ -130,6 +132,7 @@ export class OrderForm {
 
       await context.sync();
 
+      this.po_number = getRangeValueAsString(poNumberRange) ?? "";
       this.vendor = getRangeValueAsString(vendorRange) ?? "";
       this.job_number = getRangeValueAsString(jobNumberRange) ?? "";
       this.cost_code = getRangeValueAsString(costCodeRange) ?? "";
@@ -287,6 +290,7 @@ export class OrderForm {
       let coversheet = context.workbook.worksheets.getFirst();
       let firstOrderSheet = coversheet.getNext();
 
+      let poNumberRange = getRangeAndLoadValues(firstOrderSheet, "PONumber");
       let vendorRange = getRangeAndLoadValues(firstOrderSheet, "Vendor");
       let jobNumberRange = getRangeAndLoadValues(firstOrderSheet, "JobNumber");
       let orderDateRange = getRangeAndLoadValues(
@@ -300,6 +304,7 @@ export class OrderForm {
 
       await context.sync();
 
+      this.po_number = getRangeValueAsString(poNumberRange) ?? "";
       this.vendor = getRangeValueAsString(vendorRange) ?? "";
       this.job_number = getRangeValueAsString(jobNumberRange) ?? "";
       this.order_date = getRangeDateValue(orderDateRange);

@@ -30,8 +30,8 @@ interface FormComboSearchBoxProps {
   name: string;
   label: string;
   items: ComboBoxItem[];
-  required?: boolean;
   disabled?: boolean;
+  hidden?: boolean;
 }
 
 export function FormComboSearchBox({
@@ -39,8 +39,8 @@ export function FormComboSearchBox({
   name,
   label,
   items,
-  required = false,
   disabled = false,
+  hidden = false,
 }: FormComboSearchBoxProps) {
   const comboboxId = React.useId();
 
@@ -51,11 +51,8 @@ export function FormComboSearchBox({
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={comboboxId}>
-            {label}
-            {required ? " *" : ""}
-          </FieldLabel>
+        <Field data-invalid={fieldState.invalid} hidden={hidden}>
+          <FieldLabel htmlFor={comboboxId}>{label}</FieldLabel>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
