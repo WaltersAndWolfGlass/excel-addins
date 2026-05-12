@@ -12,7 +12,7 @@ import {
 } from "@/components/form-combosearchbox";
 import { FormDatePicker } from "@/components/form-datepicker";
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field";
-import { OrderForm, OrderFormLineItem } from "@/model/order_form";
+import { OrderForm } from "@/model/order_form";
 import {
   Company,
   getCompanies,
@@ -33,6 +33,7 @@ import { alphaNumCompare } from "@/lib/sorters";
 import { TryGetVistaJobNumber } from "@/lib/domain";
 import { FormSwitch } from "./form-switch";
 import { cn } from "@/lib/utils";
+import { POItemDataTable, POLineItem } from "./vista/poitem_datatable";
 
 const optionalString = z
   .optional(z.string().trim())
@@ -92,19 +93,18 @@ const formSchema = z.discriminatedUnion("createPO", [
     ship_instructions: optionalString,
     cost_code: reqCostCode,
     division: reqCountingNumber,
-    tax_code: reqString,
+    tax_code: optionalString,
   }),
   z.object({
     createPO: z.literal(false),
     po_number: reqString,
     first_item_number: reqCountingNumber,
     po_description: reqString,
-    expected_date: reqDate,
     jc_company: reqId,
     job_number: reqJobNumber,
     cost_code: reqCostCode,
     division: reqCountingNumber,
-    tax_code: reqString,
+    tax_code: optionalString,
   }),
 ]);
 
@@ -119,7 +119,6 @@ export function VistaExportForm() {
       po_number: "",
       first_item_number: "1",
       po_description: "",
-      expected_date: undefined,
       jc_company: "",
       job_number: "",
       cost_code: "",
@@ -148,6 +147,8 @@ export function VistaExportForm() {
     [],
   );
   const [createPO, setCreatePO] = React.useState(false);
+  const [poType, setPoType] = React.useState<"metal" | "glass">("metal");
+  const [lineItems, setLineItems] = React.useState<POLineItem[]>([]);
 
   React.useEffect(() => {
     const checkOffice = async () => {
@@ -174,6 +175,7 @@ export function VistaExportForm() {
     if (exportCount > 0) {
       downloadRef.current?.click();
     }
+    setExportCount(0);
   }, [exportText, exportFileName, exportCount]);
 
   React.useEffect(() => {
@@ -333,19 +335,18 @@ export function VistaExportForm() {
     );
   }
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  function onExport(data: z.infer<typeof formSchema>) {
     constructText(data).then((text) => {
       setExportText(text);
-      setExportFileName(`${data.po_description} (${data.job_number}).csv`);
+      setExportFileName(
+        `${data.po_description} (${data.createPO ? `JOB ${data.job_number}` : `PO ${data.po_number}`}).csv`,
+      );
       setExportCount(exportCount + 1);
     });
     toast.success("Exported! Check your downloads folder.");
   }
 
   async function constructText(data: z.infer<typeof formSchema>) {
-    let orderForm = new OrderForm();
-    let lineItems = await orderForm.GetLineItems();
-
     let today = new Date();
 
     let header: string = [
@@ -355,7 +356,7 @@ export function VistaExportForm() {
       data.createPO ? (data.vendor_number ?? "") : "",
       data.po_description ?? "",
       data.createPO ? formatDate(data.order_date, "") : "",
-      formatDate(data.expected_date, ""),
+      data.createPO ? formatDate(data.expected_date, "") : "",
       data.createPO ? (data.ordered_by ?? "") : "",
       data.jc_company,
       data.job_number,
@@ -375,7 +376,7 @@ export function VistaExportForm() {
     }
 
     var i = data.createPO ? 1 : (data.first_item_number ?? 1);
-    let lines = lineItems.map((x: OrderFormLineItem) => {
+    let lines = lineItems.map((x: POLineItem) => {
       return [
         "POIB",
         "1", // reckey
@@ -384,12 +385,12 @@ export function VistaExportForm() {
         data.job_number,
         data.cost_code,
         x.description,
-        formatDate(data.expected_date, ""),
         data.division,
         x.units,
         x.quantity,
         x.price_per_unit,
         "E",
+        data.tax_code ? "1" : "", // tax type: 1 = sales, only applies if there is a tax code
         data.tax_code,
         x.mark_number,
       ].join("\t");
@@ -400,109 +401,127 @@ export function VistaExportForm() {
 
   function readSheetHeader() {
     let orderForm = new OrderForm();
-    orderForm.LoadHeaderFromWorkbook().then((success) => {
-      if (!success) {
-        toast.error("Failed to load data from sheet");
-        return;
-      }
-
-      if (orderForm.form_type === "metal") {
-        if (orderForm.po_number) {
-          form.setValue("createPO", false);
-          form.setValue("po_number", orderForm.po_number ?? "");
-        } else {
-          form.setValue("createPO", true);
-        }
-        form.setValue("po_description", "Metal Order");
-        const [converted, vistaJobNumber] = TryGetVistaJobNumber(
-          orderForm.job_number ?? "",
-        );
-        if (converted) {
-          form.setValue("job_number", vistaJobNumber);
-        } else {
-          form.setValue("job_number", orderForm.job_number ?? "");
-        }
-        // needs to fill in vendor field
-        form.setValue("cost_code", orderForm.cost_code ?? "");
-        if (orderForm.ordered_by?.includes(" ")) {
-          const words = orderForm.ordered_by.split(" ");
-          const initials = words
-            .map((w) => w.substring(0, 1))
-            .join("")
-            .toUpperCase();
-          form.setValue("ordered_by", initials);
-        } else {
-          form.setValue("ordered_by", orderForm.ordered_by ?? "");
-        }
-        if (orderForm.order_date) {
-          form.setValue("order_date", orderForm.order_date);
-        } else {
-          form.resetField("order_date");
-        }
-        if (orderForm.expected_date) {
-          form.setValue("expected_date", orderForm.expected_date);
-        } else {
-          form.resetField("expected_date");
-        }
-        form.setValue("warranty", orderForm.warranty ?? "");
-        toast.success(
-          `Successfully imported sheet data for Metal Order Form (v${orderForm.template_version})`,
-        );
-        return;
-      }
-
-      if (orderForm.form_type === "glass") {
-        var desc = "";
-        switch (orderForm.form_subtype) {
-          case "glass":
-            desc = "Glass Order";
-            break;
-          case "aluminum":
-            desc = "Aluminum Panel Order";
-            break;
-          case "composite":
-            desc = "Composite Panel Order";
-            break;
-          case "door":
-            desc = "Door Glass Order";
-            break;
-          default:
-            desc = "Unknown Glass Order";
-            break;
+    orderForm
+      .LoadHeaderFromWorkbook()
+      .then((success) => {
+        if (!success) {
+          toast.error("Failed to load data from sheet");
+          return;
         }
 
-        if (orderForm.po_number) {
-          form.setValue("createPO", false);
-          form.setValue("po_number", orderForm.po_number ?? "");
-        } else {
-          form.setValue("createPO", true);
+        if (orderForm.form_type === "metal") {
+          setPoType("metal");
+          if (orderForm.po_number) {
+            form.setValue("createPO", false);
+            form.setValue("po_number", orderForm.po_number ?? "");
+          } else {
+            form.setValue("createPO", true);
+          }
+          form.setValue("po_description", "Metal Order");
+          const [converted, vistaJobNumber] = TryGetVistaJobNumber(
+            orderForm.job_number ?? "",
+          );
+          if (converted) {
+            form.setValue("job_number", vistaJobNumber);
+          } else {
+            form.setValue("job_number", orderForm.job_number ?? "");
+          }
+          // needs to fill in vendor field
+          form.setValue("cost_code", orderForm.cost_code ?? "");
+          if (orderForm.ordered_by?.includes(" ")) {
+            const words = orderForm.ordered_by.split(" ");
+            const initials = words
+              .map((w) => w.substring(0, 1))
+              .join("")
+              .toUpperCase();
+            form.setValue("ordered_by", initials);
+          } else {
+            form.setValue("ordered_by", orderForm.ordered_by ?? "");
+          }
+          if (orderForm.order_date) {
+            form.setValue("order_date", orderForm.order_date);
+          } else {
+            form.resetField("order_date");
+          }
+          if (orderForm.expected_date) {
+            form.setValue("expected_date", orderForm.expected_date);
+          } else {
+            form.resetField("expected_date");
+          }
+          form.setValue("warranty", orderForm.warranty ?? "");
+          toast.success(
+            `Successfully imported sheet data for Metal Order Form (v${orderForm.template_version})`,
+          );
+          return;
         }
-        form.setValue("po_description", desc);
-        const [converted, vistaJobNumber] = TryGetVistaJobNumber(
-          orderForm.job_number ?? "",
-        );
-        if (converted) {
-          form.setValue("job_number", vistaJobNumber);
-        } else {
-          form.setValue("job_number", orderForm.job_number ?? "");
+
+        if (orderForm.form_type === "glass") {
+          setPoType("glass");
+          var desc = "";
+          switch (orderForm.form_subtype) {
+            case "glass":
+              desc = "Glass Order";
+              break;
+            case "aluminum":
+              desc = "Aluminum Panel Order";
+              break;
+            case "composite":
+              desc = "Composite Panel Order";
+              break;
+            case "door":
+              desc = "Door Glass Order";
+              break;
+            default:
+              desc = "Unknown Glass Order";
+              break;
+          }
+
+          if (orderForm.po_number) {
+            form.setValue("createPO", false);
+            form.setValue("po_number", orderForm.po_number ?? "");
+          } else {
+            form.setValue("createPO", true);
+          }
+          form.setValue("po_description", desc);
+          const [converted, vistaJobNumber] = TryGetVistaJobNumber(
+            orderForm.job_number ?? "",
+          );
+          if (converted) {
+            form.setValue("job_number", vistaJobNumber);
+          } else {
+            form.setValue("job_number", orderForm.job_number ?? "");
+          }
+          // needs to fill in vendor field
+          if (orderForm.order_date) {
+            form.setValue("order_date", orderForm.order_date);
+          } else {
+            form.resetField("order_date");
+          }
+          if (orderForm.expected_date) {
+            form.setValue("expected_date", orderForm.expected_date);
+          } else {
+            form.resetField("expected_date");
+          }
+          toast.success(
+            `Successfully imported first sheet data for ${desc} Form (v${orderForm.template_version})`,
+          );
+          return;
         }
-        // needs to fill in vendor field
-        if (orderForm.order_date) {
-          form.setValue("order_date", orderForm.order_date);
-        } else {
-          form.resetField("order_date");
-        }
-        if (orderForm.expected_date) {
-          form.setValue("expected_date", orderForm.expected_date);
-        } else {
-          form.resetField("expected_date");
-        }
-        toast.success(
-          `Successfully imported first sheet data for ${desc} Form (v${orderForm.template_version})`,
-        );
-        return;
-      }
-    });
+      })
+      .then(() =>
+        orderForm.GetLineItems().then((result) => {
+          if (typeof result === "string") {
+            toast.error(result);
+            return;
+          }
+          setLineItems(
+            result.map((x) => ({
+              ...x,
+              price_per_unit: Math.round(x.price_per_unit * 100) / 100,
+            })),
+          );
+        }),
+      );
   }
 
   return (
@@ -513,7 +532,7 @@ export function VistaExportForm() {
       </h1>
       <form
         id="export-vista-form"
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={(e) => e.preventDefault()}
         className="mb-8"
       >
         <FieldGroup
@@ -628,6 +647,7 @@ export function VistaExportForm() {
                 name="expected_date"
                 control={form.control}
                 label="Expected Date"
+                hidden={!createPO}
               />
               <FormTextBox
                 name="ordered_by"
@@ -684,10 +704,18 @@ export function VistaExportForm() {
           </FieldSet>
         </FieldGroup>
       </form>
+      <div className="my-8">
+        <POItemDataTable
+          data={lineItems}
+          setData={setLineItems}
+          showMarkNumber={poType === "glass"}
+        />
+      </div>
       <Button
         type="submit"
         form="export-vista-form"
         disabled={excelState !== "ready"}
+        onClick={form.handleSubmit(onExport)}
       >
         Export
       </Button>

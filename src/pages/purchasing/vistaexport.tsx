@@ -12,7 +12,7 @@ const IndexPage: React.FC<PageProps> = () => {
       </main>
       <footer>
         <div className="text-right">
-          <small className="p-8">v0.5.0.0 2026-05-07</small>
+          <small className="p-8">v0.5.1.0 2026-05-12</small>
         </div>
       </footer>
     </>
