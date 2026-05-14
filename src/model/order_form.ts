@@ -19,7 +19,14 @@ export type OrderFormLineItem = {
 
 export class OrderForm {
   form_type: "metal" | "glass" | "misc" | "unknown" = "unknown";
-  form_subtype: "n/a" | "glass" | "aluminum" | "composite" | "door" = "n/a";
+  form_subtype:
+    | "n/a"
+    | "glass"
+    | "aluminum"
+    | "composite"
+    | "door"
+    | "hardware" = "n/a";
+  has_cover_sheet: boolean | undefined = undefined;
   po_number: string | undefined = undefined;
   vendor: string | undefined = undefined;
   order_date: Date | undefined = undefined;
@@ -42,13 +49,29 @@ export class OrderForm {
     let sheet = context.workbook.worksheets.getActiveWorksheet();
 
     let metalRange = getRangeAndLoadValues(sheet, "K7");
-    let glass1Range = getRangeAndLoadValues(sheet, "T1:BS1");
+    let miscRange = getRangeAndLoadValues(sheet, "N2");
+    let miscHardwareRange = getRangeAndLoadValues(sheet, "I2");
     await context.sync();
 
     let value = getRangeValueAsString(metalRange);
 
     if (value == "PURCHASE ORDER REQUEST") {
       this.form_type = "metal";
+      this.form_subtype = "n/a";
+      return;
+    }
+
+    value = getRangeValueAsString(miscRange);
+    if (value == "DETAILED ORDER FORM") {
+      this.form_type = "misc";
+      this.form_subtype = "n/a";
+      return;
+    }
+
+    value = getRangeValueAsString(miscHardwareRange);
+    if (value == "DETAILED ORDER FORM") {
+      this.form_type = "misc";
+      this.form_subtype = "hardware";
       return;
     }
 
@@ -58,29 +81,36 @@ export class OrderForm {
       await context.sync();
 
       if (firstSheet.name.toUpperCase() === "COVERSHEET") {
-        let sheet = firstSheet.getNext();
-        let glass2Range = getRangeAndLoadValues(sheet, "OrderFormType");
-        await context.sync();
-        let value = getRangeValueAsString(glass2Range);
-        if (value == "GLASS ORDER") {
-          this.form_type = "glass";
-          this.form_subtype = "glass";
-          return;
-        } else if (value == "ALUMINUM PANEL ORDER") {
-          this.form_type = "glass";
-          this.form_subtype = "aluminum";
-          return;
-        } else if (value == "COMPOSITE PANEL ORDER") {
-          this.form_type = "glass";
-          this.form_subtype = "composite";
-          return;
-        } else if (value?.endsWith("DOOR GLASS ORDER")) {
-          this.form_type = "glass";
-          this.form_subtype = "door";
-          return;
-        }
+        this.has_cover_sheet = true;
+        sheet = firstSheet.getNext();
+      } else {
+        this.has_cover_sheet = false;
+        sheet = firstSheet;
+      }
+
+      let glass2Range = getRangeAndLoadValues(sheet, "OrderFormType");
+      await context.sync();
+      let value = getRangeValueAsString(glass2Range);
+      if (value == "GLASS ORDER") {
+        this.form_type = "glass";
+        this.form_subtype = "glass";
+        return;
+      } else if (value == "ALUMINUM PANEL ORDER") {
+        this.form_type = "glass";
+        this.form_subtype = "aluminum";
+        return;
+      } else if (value == "COMPOSITE PANEL ORDER") {
+        this.form_type = "glass";
+        this.form_subtype = "composite";
+        return;
+      } else if (value?.endsWith("DOOR GLASS ORDER")) {
+        this.form_type = "glass";
+        this.form_subtype = "door";
+        return;
       }
     } else {
+      let glass1Range = getRangeAndLoadValues(sheet, "T1:BS1");
+      await context.sync();
       let values = getRangeValues(glass1Range);
       if (values?.find((x) => x.find((y) => y == "GLASS ORDER"))) {
         this.form_type = "glass";
@@ -103,6 +133,8 @@ export class OrderForm {
           } else {
             return false;
           }
+        } else if (this.form_type === "misc") {
+          return await this.LoadHeaderFromMiscOrderForm(context);
         }
 
         return false;
@@ -147,6 +179,25 @@ export class OrderForm {
     }
   }
 
+  private async LoadHeaderFromMiscOrderForm(context: any): Promise<boolean> {
+    try {
+      let sheet = context.workbook.worksheets.getActiveWorksheet();
+
+      let vendorRange = getRangeAndLoadValues(
+        sheet,
+        this.form_subtype === "hardware" ? "D7" : "G7",
+      );
+
+      await context.sync();
+
+      this.vendor = getRangeValueAsString(vendorRange) ?? "";
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async GetLineItems(): Promise<string | OrderFormLineItem[]> {
     try {
       return await Excel.run(async (context: any) => {
@@ -155,6 +206,8 @@ export class OrderForm {
         switch (this.form_type) {
           case "metal":
             return await this.GetLineItemsFromMetalOrderForm(context);
+          case "misc":
+            return await this.GetLineItemsFromMiscOrderForm(context);
           case "glass":
             if (this.template_version >= 2) {
               return await this.GetLineItemsFromGlassOrderForm2(context);
@@ -210,6 +263,25 @@ export class OrderForm {
             e.length > 0 && String(e[0])?.toUpperCase().includes("SET-UP"),
         ) + 19;
     }
+    return { firstRow: firstRow, lastRow: lastRow };
+  }
+
+  private async GetMiscDataRowLimits(
+    context: any,
+    sheet: any,
+  ): Promise<{ firstRow: number; lastRow: number }> {
+    let firstRow = 11;
+    let lastRow: number;
+
+    let column = this.form_subtype === "hardware" ? "O" : "Q";
+
+    let range = getRangeAndLoadValues(sheet, `${column}10:${column}10000`);
+    await context.sync();
+
+    lastRow =
+      range.values.findIndex(
+        (e: any) => e.length > 0 && String(e[0])?.toUpperCase() === "TOTAL",
+      ) + 7;
     return { firstRow: firstRow, lastRow: lastRow };
   }
 
@@ -285,10 +357,47 @@ export class OrderForm {
       });
   }
 
+  private async GetLineItemsFromMiscOrderForm(context: any) {
+    let sheet = context.workbook.worksheets.getActiveWorksheet();
+
+    let limits = await this.GetMiscDataRowLimits(context, sheet);
+
+    let firstColumn = this.form_subtype === "hardware" ? "A" : "D";
+    let lastColumn = this.form_subtype === "hardware" ? "O" : "Q";
+
+    let values = await getValues(
+      context,
+      sheet,
+      `${firstColumn}${limits.firstRow}:${lastColumn}${limits.lastRow}`,
+    );
+
+    return values
+      .filter((x: Array<any>) => {
+        let qty = Number(x[0]);
+        return !isNaN(qty) && qty > 0;
+      })
+      .map((x: Array<any>): OrderFormLineItem => {
+        let qty = Number(x[0]); // column A/D (hardware/normal misc)
+        let description = String(x[3]); // column D/G
+        let unitCost =
+          this.form_subtype === "hardware" ? Number(x[14]) : Number(x[13]); // column O/Q
+
+        let price = isNaN(unitCost) ? 0 : Math.round(unitCost * 10000) / 10000;
+
+        return {
+          description,
+          units: "EA",
+          quantity: qty,
+          price_per_unit: price,
+          mark_number: "",
+        };
+      });
+  }
+
   private async LoadHeaderFromGlassOrderForm2(context: any): Promise<boolean> {
     try {
-      let coversheet = context.workbook.worksheets.getFirst();
-      let firstOrderSheet = coversheet.getNext();
+      let firstOrderSheet = context.workbook.worksheets.getFirst();
+      if (this.has_cover_sheet) firstOrderSheet = firstOrderSheet.getNext();
 
       let poNumberRange = getRangeAndLoadValues(firstOrderSheet, "PONumber");
       let vendorRange = getRangeAndLoadValues(firstOrderSheet, "Vendor");

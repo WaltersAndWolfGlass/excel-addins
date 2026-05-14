@@ -16,8 +16,6 @@ import { OrderForm } from "@/model/order_form";
 import {
   Company,
   getCompanies,
-  Division,
-  getDivisions,
   getVendors,
   getJobs,
   getPhaseCodes,
@@ -92,7 +90,6 @@ const formSchema = z.discriminatedUnion("createPO", [
     ship_zip: reqString,
     ship_instructions: optionalString,
     cost_code: reqCostCode,
-    division: reqCountingNumber,
     tax_code: optionalString,
   }),
   z.object({
@@ -103,7 +100,6 @@ const formSchema = z.discriminatedUnion("createPO", [
     jc_company: reqId,
     job_number: reqJobNumber,
     cost_code: reqCostCode,
-    division: reqCountingNumber,
     tax_code: optionalString,
   }),
 ]);
@@ -122,7 +118,6 @@ export function VistaExportForm() {
       jc_company: "",
       job_number: "",
       cost_code: "",
-      division: "",
       tax_code: "",
     },
   });
@@ -133,7 +128,6 @@ export function VistaExportForm() {
   const [exportCount, setExportCount] = React.useState(0);
   const [companies, setCompanies] = React.useState<Company[]>([]);
   const [companySelected, setCompanySelected] = React.useState(false);
-  const [divisions, setDivisions] = React.useState<Division[]>([]);
   const [vendors, setVendors] = React.useState<(ComboBoxItem & Vendor)[]>([]);
   const [jobs, setJobs] = React.useState<(ComboBoxItem & Job)[]>([]);
   const [jobSelected, setJobSelected] = React.useState(false);
@@ -192,7 +186,6 @@ export function VistaExportForm() {
           if (data.jc_company) {
             form.resetField("po_number");
             form.resetField("first_item_number");
-            form.resetField("division");
             form.resetField("vendor_number");
             form.resetField("job_number");
             form.resetField("cost_code");
@@ -204,7 +197,6 @@ export function VistaExportForm() {
             form.resetField("ship_zip");
             setCompanySelected(true);
             setJobSelected(false);
-            getDivisions(data.jc_company).then((data) => setDivisions(data));
             getVendors(data.jc_company ?? "").then((vs) => {
               vs.sort((a, b) => alphaNumCompare(a.Name, b.Name));
               setVendors(
@@ -249,7 +241,6 @@ export function VistaExportForm() {
           } else {
             form.resetField("po_number");
             form.resetField("first_item_number");
-            form.resetField("division");
             form.resetField("vendor_number");
             form.resetField("job_number");
             form.resetField("cost_code");
@@ -261,7 +252,6 @@ export function VistaExportForm() {
             form.resetField("ship_zip");
             setCompanySelected(false);
             setJobSelected(false);
-            setDivisions([]);
             setVendors([]);
             setJobs([]);
             setCostCodes([]);
@@ -274,16 +264,22 @@ export function VistaExportForm() {
             form.resetField("first_item_number");
             form.resetField("cost_code");
             setJobSelected(true);
-            getPhaseCodes(data.job_number ?? "").then((pcs) => {
-              pcs.sort((a, b) => alphaNumCompare(a.Code, b.Code));
-              setCostCodes(
-                pcs.map((pc) => ({
-                  value: pc.Code,
-                  label: `[${pc.Code}] ${pc.Description}`,
-                  ...pc,
-                })),
-              );
-            });
+            getPhaseCodes(data.job_number ?? "")
+              .then((pcs) => {
+                pcs.sort((a, b) => alphaNumCompare(a.Code, b.Code));
+                setCostCodes(
+                  pcs.map((pc) => ({
+                    value: pc.Code,
+                    label: `[${pc.Code}] ${pc.Description}`,
+                    ...pc,
+                  })),
+                );
+              })
+              .catch((error) => {
+                toast.error(
+                  `Unable to retrieve cost codes from job number "${data.job_number ?? "(blank)"}"`,
+                );
+              });
           } else {
             form.resetField("first_item_number");
             form.resetField("cost_code");
@@ -385,7 +381,6 @@ export function VistaExportForm() {
         data.job_number,
         data.cost_code,
         x.description,
-        data.division,
         x.units,
         x.quantity,
         x.price_per_unit,
@@ -543,7 +538,7 @@ export function VistaExportForm() {
           )}
         >
           <FieldSet key="companySection">
-            <FieldLegend>Company Information</FieldLegend>
+            <FieldLegend>General</FieldLegend>
             <FieldGroup>
               <FormSelect
                 name="jc_company"
@@ -554,20 +549,7 @@ export function VistaExportForm() {
                   label: x.name,
                 }))}
               />
-              <FormSelect
-                name="division"
-                control={form.control}
-                label="Division"
-                disabled={!companySelected}
-                items={divisions.map((x) => ({
-                  value: x.id.toString(),
-                  label: x.name,
-                }))}
-              />
             </FieldGroup>
-          </FieldSet>
-          <FieldSet key="excelSection">
-            <FieldLegend>Excel</FieldLegend>
             <FieldGroup>
               <Button
                 variant="outline"
