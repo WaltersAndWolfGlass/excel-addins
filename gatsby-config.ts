@@ -11,7 +11,20 @@ const config: GatsbyConfig = {
   // If you use VSCode you can also use the GraphQL plugin
   // Learn more at: https://gatsby.dev/graphql-typegen
   graphqlTypegen: true,
-  plugins: ["gatsby-plugin-postcss", "gatsby-plugin-lodash"],
+  plugins: [
+    "gatsby-plugin-postcss",
+    "gatsby-plugin-lodash",
+    "gatsby-plugin-image",
+    "gatsby-plugin-sharp",
+    "gatsby-plugin-mdx",
+    {
+      resolve: "gatsby-source-filesystem",
+      options: {
+        name: "docs",
+        path: `${__dirname}/src/docs`,
+      },
+    },
+  ],
   developMiddleware: (app) => {
     app.use(
       createProxyMiddleware({

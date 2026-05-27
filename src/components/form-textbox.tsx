@@ -7,11 +7,13 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { FormFieldErrorMessage } from "./form-fielderror-message";
+import { HelpLink } from "./help-link";
 
 interface FormTextBoxProps {
   control: any;
   name: string;
   label: string;
+  help?: string;
   suffix?: string | undefined;
   disabled?: boolean;
   hidden?: boolean;
@@ -22,6 +24,7 @@ export function FormTextBox({
   control,
   name,
   label,
+  help,
   suffix = undefined,
   disabled = false,
   hidden = false,
@@ -35,7 +38,10 @@ export function FormTextBox({
       control={control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} hidden={hidden}>
-          <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+          <FieldLabel htmlFor={inputId}>
+            {label}
+            {help && <HelpLink href={help} />}
+          </FieldLabel>
           <InputGroup>
             <InputGroupInput
               {...field}

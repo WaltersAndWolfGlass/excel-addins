@@ -1,0 +1,109 @@
+---
+section: "Vista Export"
+title: "Import into Vista"
+order: 001001
+lastupdated: "2026-05-27T12:00:00-07:00"
+slug: "purchasing/docs/import-into-vista"
+---
+
+After exporting the data, you will have a `.csv` file in your `Downloads`
+folder. Follow the instructions below to import this file into Vista.
+
+## Import into a Batch
+
+1. In the main Vista window, go to **Imports** > **Programs** and then double-click the **IM Import** option.
+   <img
+     alt="Vista Import"
+     src="../../../VistaImport.png"
+     width="945"
+     height="589"
+   />
+2. In the Import dialog, fill in the **ImportID** with any identifier you want,
+   you can even reuse the same one repeatedly.
+3. For the **Template** make sure to choose `WWPO-EXCEL`. You can find this by
+   putting your cursor in the field and either pushing the binoculars button or
+   hitting <Kbd>F4</Kbd> and choosing it from the list.
+4. Then you will want to hit the **Browse...** button to select the `.csv` file
+   created by the Vista Export from Excel. It should be in your `Downloads`
+   folder by default.
+5. Now push the **Execute** button to have Vista parse out the `.csv` file.
+   <img
+     alt="Choose template, browse, and execute"
+     src="../../../VistaImport-Browse-Execute.png"
+     width="941"
+     height="459"
+   />
+6. You will see text scrolling through the Import Results box at the bottom.
+   When that finishes, you can push the **Open IM Upload** button to finalize
+   the import.
+   <DocumentCard title="TIP">
+     You can push the **Open Work Edit** button to see and change the data
+     brought in from the import before the batch is created.
+   </DocumentCard>
+   <img
+     alt="Open IM Upload"
+     src="../../../VistaImport-OpenUpload.png"
+     width="945"
+     height="452"
+   />
+7. A dialog will pop up where you just need to push the **Upload** button.
+   <img
+     alt="Upload"
+     src="../../../VistaImport-Upload.png"
+     width="512"
+     height="339"
+   />
+8. If everything is successful, a dialog will pop up showing the created
+   **Batch ID**. Take note of this number because this is the batch where the
+   imported data resides. You can now close all the open Vista windows and
+   return to the main window.
+   <DocumentCard type="warning">
+     If there is an error or you don't see the batch ID, then the batch was not
+     successfully created. If adding to an existing PO, make sure the PO already
+     exists and your **First PO Item Number** is _after_ all other existing
+     items already in the PO
+   </DocumentCard>
+   <img
+     alt="Note the batch number"
+     src="../../../VistaImport-BatchDetail.png"
+     width="461"
+     height="335"
+   />
+
+## Processing the Batch
+
+1. Now that the data has been imported into a batch, you must process the batch
+   to either create the PO or to add the items to an existing PO. In the main
+   Vista window, go to **Purchase Order** > **Programs** and double-click on
+   **PO Purchase Order Entry**
+   <img
+     alt="Purchase Order Entry"
+     src="../../../VistaImport-PurchaseOrderEntry.png"
+     width="944"
+     height="589"
+   />
+2. In the Batch Selection dialog, select **Use an existing batch** and you
+   should see the batch number from the import steps above. Select that batch
+   and click **OK**
+   <img
+     alt="Select the batch"
+     src="../../../VistaImport-BatchSelection.png"
+     width="938"
+     height="454"
+   />
+3. In the Purchase Order Entry dialog, you should see all of the data from the
+   Excel export. Verify and make any changes needed before proceeding.
+   <img
+     alt="Review the PO data"
+     src="../../../VistaImport-POEntryReview.png"
+     width="943"
+     height="714"
+   />
+4. When everything looks good, go up to **File** > **Process Batch** to finalize
+   everything and push the data into the PO.
+   <img
+     alt="Process Batch"
+     src="../../../VistaImport-ProcessBatch.png"
+     width="941"
+     height="720"
+   />

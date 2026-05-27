@@ -32,6 +32,7 @@ import { TryGetVistaJobNumber } from "@/lib/domain";
 import { FormSwitch } from "./form-switch";
 import { cn } from "@/lib/utils";
 import { POItemDataTable, POLineItem } from "./vista/poitem_datatable";
+import { HelpLink } from "./help-link";
 
 const optionalString = z
   .optional(z.string().trim())
@@ -524,6 +525,7 @@ export function VistaExportForm() {
       <h1 className="flex items-center space-x-2 scroll-m-20 tracking-tight text-balance mb-8">
         <img src="../../vista256.png" className="inline-block size-6" />
         <span className="text-2xl font-extrabold ">Vista Export</span>
+        <HelpLink href="../docs/vista-export-form" />
       </h1>
       <form
         id="export-vista-form"

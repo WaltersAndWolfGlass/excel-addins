@@ -1,0 +1,106 @@
+---
+section: "Vista Export"
+title: "Export Form"
+order: 001000
+lastupdated: "2026-05-27T12:00:00-07:00"
+slug: "purchasing/docs/vista-export-form"
+---
+
+The Vista Export add-in takes an Excel Purchase Order of any type and creates a
+ready-made text file to import into Vista. It will read standard purchase order
+templates for Metal, Glass, Glazed-in Composite or Metal Panels, Miscellaneous,
+Door Glass, or Door Hardware.
+
+To begin, go to the **W&W Purchasing** tab in the ribbon and click the **Vista**
+export button. This will open a side panel showing the Export Form.
+
+<img
+  alt="Excel Vista Export"
+  src="../../../ExcelVistaExport.png"
+  width="1275"
+  height="692"
+/>
+
+In general, it is best to fill out the form from top to bottom, left to right.
+Most of the fields are self explanitory, but a few are listed below with a few notes.
+
+When you have completed filling out the form, press the **Export** button at the
+bottom of the screen. This exports all the data of the form into a csv file that
+is saved into your _Downloads_ folder to be imported into Vista.
+
+## Import from Excel
+
+<img
+  alt="Import From Excel"
+  src="../../../ExcelVistaExport-ImportFromExcel.png"
+  width="527"
+  height="357"
+/>
+
+After filling out the **Company** field, the **Import from Excel** button becomes
+available. This button reads in all of the data in the Excel order form
+and brings it into the form, including job number, PO number, and the
+listed items to order. For Metal, Miscellaneous, and Door Hardware
+orders, this function only loads in the _active_ sheet of the opened Excel
+file. For other order forms, it loads in all the data for every sheet
+in the file. You can edit any of the loaded data by changing it in the
+rest of the form.
+
+## New vs. Existing Purchase Orders
+
+In the **Purchasing Information** section, there is a switch to toggle
+**Create New Purchase Order** or not. Toggle this off when you already have a
+purchase order in Vista and only want to export the line items for the purchase
+order. Toggle it on when you want to create a whole new Purchase Order in Vista
+and allow Vista to assign the PO number.
+
+<DocumentCard type="warning">
+  To use an existing purchase order in Vista, the PO can't be pending. It must
+  already be interfaced.
+</DocumentCard>
+
+<img
+  alt="Create New Purchase Order"
+  src="../../../ExcelVistaExport-CreateNewPO.png"
+  width="529"
+  height="362"
+/>
+
+## First PO Item Number
+
+When exporting to an existing Purchase Order, this field shows up and tells the
+export what number to start at for the PO Items. For example, if the existing
+Vista PO already has Items 1-10, then your export needs to start on item 11 so
+you would put 11 in this field. Since existing Vista purchase orders _have to be
+interfaced_, it should already have an item in it. Hopefully the first item in
+Vista is set to item number 0 so your export can start on item 1. You will have
+to go into Vista to look up the item numbers in the existing PO to find out what
+needs to be put into this field to avoid errors.
+
+<img
+  alt="First PO Item"
+  src="../../../ExcelVistaExport-FirstPOItem.png"
+  width="529"
+  height="362"
+/>
+
+## Item Table
+
+At the bottom of the form is a list of all the items that will be included in
+the export. There is a button to **Add** more items at the end of the list. To
+insert a new row in the middle of the list, mark the row where you want to
+insert the item and click the **Insert** button. To delete items, use the check
+boxes to mark the items you want to delete, then press the **Delete** button.
+
+<DocumentCard title="TIP">
+  You can mark multiple items by checking the first item, then hold down the
+  <Kbd>Shift</Kbd> key as you check the last item. This will mark the first
+  item, the last item, and all the items in between.
+</DocumentCard>
+
+<img
+  alt="Item Table"
+  src="../../../ExcelVistaExport-ItemTable.png"
+  width="518"
+  height="995"
+/>

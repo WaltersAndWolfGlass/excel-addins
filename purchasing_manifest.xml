@@ -11,7 +11,7 @@
   <Description DefaultValue="Functions for Walters &amp; Wolf Purchasing Department"/>
   <IconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/wwpurchasing32.png"/>
   <HighResolutionIconUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/wwpurchasing80.png"/>
-  <SupportUrl DefaultValue="https://www.waltersandwolf.com/"/>
+  <SupportUrl DefaultValue="https://waltersandwolfglass.github.io/excel-addins/purchasing/docs/installation/"/>
   <AppDomains>
     <AppDomain>https://waltersandwolfglass.github.io</AppDomain>
   </AppDomains>
@@ -71,7 +71,7 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="WW.Taskpane.Url" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/purchasing/vistaexport/"/>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://www.waltersandwolf.com"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://waltersandwolfglass.github.io/excel-addins/purchasing/docs/installation/"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started with W&amp;W Excel addins!"/>

@@ -3,11 +3,13 @@ import { Controller } from "react-hook-form";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormFieldErrorMessage } from "./form-fielderror-message";
 import { Switch } from "./ui/switch";
+import { HelpLink } from "./help-link";
 
 interface FormSwitchProps {
   control: any;
   name: string;
   label: string;
+  help?: string;
   disabled?: boolean;
 }
 
@@ -15,6 +17,7 @@ export function FormSwitch({
   control,
   name,
   label,
+  help,
   disabled = false,
 }: FormSwitchProps) {
   const switchId = React.useId();
@@ -25,7 +28,10 @@ export function FormSwitch({
       control={control}
       render={({ field, fieldState }) => (
         <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={switchId}>{label}</FieldLabel>
+          <FieldLabel htmlFor={switchId}>
+            {label}
+            {help && <HelpLink href={help} />}
+          </FieldLabel>
           <Switch
             id={switchId}
             disabled={disabled}
